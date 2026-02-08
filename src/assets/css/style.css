@@ -39,7 +39,6 @@
     --color-sidebar-ring: var(--sidebar-ring);
 }
 
-
 body {
     --radius: 0.75rem; /* Increased from 0.5rem */
     --radius-lg: 1rem;
@@ -106,7 +105,6 @@ body {
     --sidebar-ring: oklch(58.1% 0.107 256deg);
 }
 
-
 #root,
 html,
 body {
@@ -116,14 +114,14 @@ body {
 }
 
 [role="alertdialog"] {
-	border: 1px solid var(--border) !important;
+    border: 1px solid var(--border) !important;
 }
 
 @layer base {
-	* {
-		@apply border-border outline-ring/50;
-	}
-	body {
-		@apply bg-background text-foreground;
-	}
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
 }
