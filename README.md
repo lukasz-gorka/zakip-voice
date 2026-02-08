@@ -1,6 +1,10 @@
-# Zakip Voice
+<p align="center">
+  <img src="public/zakip-logo-removebg-preview.png" alt="Zakip Voice" width="120" />
+</p>
 
-**Open-source desktop voice transcription with AI enhancement.**
+<h1 align="center">Zakip Voice</h1>
+
+<p align="center"><strong>Open-source desktop voice transcription with AI enhancement.</strong></p>
 
 Record audio from your microphone, transcribe it through OpenAI-compatible APIs, optionally enhance the text with an LLM, and get the result copied to your clipboard — all with a single keyboard shortcut.
 
@@ -146,10 +150,11 @@ zakip-voice/
 │   ├── integrations/ai/          # AI abstraction layer (AIService, AIServiceBackend)
 │   ├── voice/                    # Core voice workflow (VoiceModule)
 │   ├── rustProxy/                # TypeScript wrapper for Rust invoke() calls
-│   ├── events/                   # EventBus (frontend pub/sub)
-│   ├── stateSync/                # Multi-window state sync via Tauri events
+│   ├── autoUpdate/               # Auto-update functionality
+│   ├── sound/                    # Sound notifications
+│   ├── logger/                   # Logging system
 │   ├── views/
-│   │   ├── pages/                # VoiceHome, History, Shortcuts, Settings
+│   │   ├── pages/                # VoiceHome, History, Settings
 │   │   ├── settings/             # Provider, STT, Enhancement settings
 │   │   └── ui/                   # shadcn/ui components (Radix UI primitives)
 │   └── globalShortcuts/          # Keyboard shortcut registration
@@ -211,7 +216,7 @@ Two Tauri windows:
 1. **main** — Primary app window (hidden on close, shown from tray)
 2. **voice-recording-popup** — Small overlay during active recording
 
-State sync between windows uses Tauri events (`state-sync:{key}` channels).
+Windows communicate via Tauri events (`emitTo`/`listen`).
 
 ## Development
 
