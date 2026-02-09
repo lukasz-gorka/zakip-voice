@@ -74,7 +74,6 @@ export function KeyboardShortcutInput({
         setIsEditing(true);
     };
 
-    // Outside click cancels editing
     useEffect(() => {
         if (!isEditing) return;
 
@@ -159,14 +158,12 @@ export function KeyboardShortcutInput({
         return () => {
             window.removeEventListener("keydown", keydownHandler, true);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isRecording]);
 
     useEffect(() => {
         if (isEditing && !isRecording) {
             startRecording();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isEditing]);
 
     useEffect(() => {

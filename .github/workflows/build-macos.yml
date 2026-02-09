@@ -93,6 +93,49 @@ jobs:
           prerelease: false
           args: --target universal-apple-darwin
 
+      - name: Ad-hoc codesign app bundle
+        run: |
+          BUNDLE_DIR="src-tauri/target/universal-apple-darwin/release/bundle"
+          APP_BUNDLE=""
+          for d in "$BUNDLE_DIR"/macos/*.app; do
+            [ -d "$d" ] && APP_BUNDLE="$d" && break
+          done
+
+          if [ -n "$APP_BUNDLE" ]; then
+            echo "Signing $APP_BUNDLE ..."
+            codesign --force --deep --sign - "$APP_BUNDLE"
+            echo "Verifying signature..."
+            codesign -dv --verbose=2 "$APP_BUNDLE" 2>&1 | head -8
+
+            # Rebuild DMG with signed app
+            DMG_FILE=""
+            for f in "$BUNDLE_DIR"/dmg/*.dmg; do
+              [ -f "$f" ] && DMG_FILE="$f" && break
+            done
+            if [ -n "$DMG_FILE" ]; then
+              echo "Rebuilding DMG with signed app: $DMG_FILE"
+              rm -f "$DMG_FILE"
+              hdiutil create -volname "zakip-voice" -srcfolder "$APP_BUNDLE" -ov -format UDZO "$DMG_FILE"
+              echo "DMG rebuilt."
+            fi
+
+            # Rebuild .app.tar.gz with signed app
+            TARGZ=""
+            for f in "$BUNDLE_DIR"/macos/*.app.tar.gz; do
+              [ -f "$f" ] && TARGZ="$f" && break
+            done
+            if [ -n "$TARGZ" ]; then
+              echo "Rebuilding .app.tar.gz with signed app..."
+              APP_NAME=$(basename "$APP_BUNDLE")
+              tar -czf "$TARGZ" -C "$(dirname "$APP_BUNDLE")" "$APP_NAME"
+              echo "Rebuilt: $TARGZ"
+              # Remove old signature (will be re-signed below)
+              rm -f "${TARGZ}.sig"
+            fi
+          else
+            echo "WARNING: No .app bundle found in $BUNDLE_DIR/macos/"
+          fi
+
       - name: Verify and fix signature files
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -100,7 +143,7 @@ jobs:
         run: |
           BUNDLE_DIR="src-tauri/target/universal-apple-darwin/release/bundle"
           echo "=== All bundle files ==="
-          find "$BUNDLE_DIR" -type f | sort
+          find "$BUNDLE_DIR" -type f -not -path "*/macos/*.app/*" | sort
 
           # Find the .app.tar.gz (updater target)
           UPDATER_FILE=""

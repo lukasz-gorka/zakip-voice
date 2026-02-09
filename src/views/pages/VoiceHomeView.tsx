@@ -244,7 +244,9 @@ export function VoiceHomeView() {
                         </div>
                     </div>
 
-                    <div className={`h-10 flex items-center justify-center transition-opacity duration-300 ${phase === "idle" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+                    <div
+                        className={`h-10 flex items-center justify-center transition-opacity duration-300 ${phase === "idle" && !lastItem ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                    >
                         <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/30 rounded-lg border border-border/50">
                             <Switch id="ai-enhancement" checked={enableAIEnhancement} onCheckedChange={handleToggleAIEnhancement} />
                             <Label htmlFor="ai-enhancement" className="text-sm cursor-pointer flex items-center gap-1.5">
@@ -255,7 +257,7 @@ export function VoiceHomeView() {
                     </div>
 
                     <div className="h-[88px] overflow-hidden flex items-center justify-center mt-4">
-                        {phase === "idle" ? (
+                        {phase === "idle" && !lastItem ? (
                             <div className="flex flex-col items-center gap-2 animate-in fade-in duration-500">
                                 <span className="text-xl font-medium bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">
                                     Click to start recording

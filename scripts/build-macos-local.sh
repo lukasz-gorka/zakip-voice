@@ -183,6 +183,27 @@ if [ "$SKIP_BUILD" = false ]; then
   echo ""
   echo -e "${GREEN}✅ Build completed!${NC}"
 
+  # Ad-hoc codesign the .app bundle so Gatekeeper shows "unverified developer"
+  # instead of "damaged" when downloaded from the internet
+  APP_BUNDLE=$(find src-tauri/target/aarch64-apple-darwin/release/bundle/macos -name "*.app" -type d 2>/dev/null | head -n 1)
+  if [ -n "$APP_BUNDLE" ] && [ -d "$APP_BUNDLE" ]; then
+    echo -e "${BLUE}🔏 Ad-hoc signing .app bundle for Gatekeeper compatibility...${NC}"
+    codesign --force --deep --sign - "$APP_BUNDLE"
+    echo -e "${GREEN}✅ App bundle signed (ad-hoc)${NC}"
+
+    # Rebuild DMG with the signed app
+    echo -e "${BLUE}📦 Rebuilding DMG with signed app...${NC}"
+    OLD_DMG=$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -name "*.dmg" -not -name "*.sig" 2>/dev/null | head -n 1)
+    if [ -n "$OLD_DMG" ]; then
+      DMG_FILENAME=$(basename "$OLD_DMG")
+      DMG_DIR=$(dirname "$OLD_DMG")
+      rm -f "$OLD_DMG"
+      # Create new DMG with signed app
+      hdiutil create -volname "zakip-voice" -srcfolder "$APP_BUNDLE" -ov -format UDZO "$OLD_DMG"
+      echo -e "${GREEN}✅ DMG rebuilt with signed app${NC}"
+    fi
+  fi
+
   # Find the built files
   # DMG is for manual downloads
   DMG_FILE=$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -name "*.dmg" -not -name "*.sig" 2>/dev/null | head -n 1)
