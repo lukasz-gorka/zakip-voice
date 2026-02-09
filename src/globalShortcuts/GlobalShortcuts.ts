@@ -2,9 +2,15 @@ import {GlobalStore} from "../appInitializer/store/GlobalStore.ts";
 import {Logger} from "../logger/Logger.ts";
 import {toggleWindow} from "../utils/windowUtils.ts";
 import {GlobalShortcut} from "./GlobalShortcut.ts";
-import {clearAllGlobalShortcuts, refreshGlobalShortcuts} from "./globalShortcutsConfig.ts";
+import {clearAllGlobalShortcuts, refreshGlobalShortcuts, ShortcutRegistrationError} from "./globalShortcutsConfig.ts";
 
 export class GlobalShortcuts {
+    private registrationErrors: ShortcutRegistrationError[] = [];
+
+    public getRegistrationErrors(): ShortcutRegistrationError[] {
+        return this.registrationErrors;
+    }
+
     public async refreshShortcuts(): Promise<void> {
         const allShortcuts: GlobalShortcut[] = [];
 
@@ -79,9 +85,16 @@ export class GlobalShortcuts {
             );
         }
 
-        await refreshGlobalShortcuts(allShortcuts);
+        this.registrationErrors = await refreshGlobalShortcuts(allShortcuts);
 
-        Logger.info(`[GlobalShortcuts] Registered ${allShortcuts.length} shortcuts`, {data: allShortcuts});
+        const successCount = allShortcuts.length - this.registrationErrors.length;
+        if (this.registrationErrors.length > 0) {
+            Logger.warn(`[GlobalShortcuts] Registered ${successCount}/${allShortcuts.length} shortcuts (${this.registrationErrors.length} failed)`, {
+                data: {shortcuts: allShortcuts, failures: this.registrationErrors},
+            });
+        } else {
+            Logger.info(`[GlobalShortcuts] Registered ${allShortcuts.length} shortcuts`, {data: allShortcuts});
+        }
     }
 
     public async clearAllShortcuts(): Promise<void> {

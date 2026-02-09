@@ -1,8 +1,9 @@
 import {invoke} from "@tauri-apps/api/core";
-import {AudioLines, Keyboard, RotateCcw, Settings} from "lucide-react";
+import {AlertTriangle, AudioLines, Keyboard, RotateCcw, Settings} from "lucide-react";
 import {useCallback, useEffect, useState} from "react";
 import {NavLink, useNavigate} from "react-router-dom";
 import {G} from "../../../appInitializer/module/G.ts";
+import type {ShortcutRegistrationError} from "../../../globalShortcuts/globalShortcutsConfig.ts";
 import {useGlobalState} from "../../../hooks/useGlobalState.ts";
 import {getAIModelsWithProvider, getProvidersWithTag} from "../../../integrations/ai/aiModels/aiModels.ts";
 import {AIModelTag} from "../../../integrations/ai/interface/AIModelConfig.ts";
@@ -13,6 +14,7 @@ import {SpeechToTextSettings} from "../../../voice/interfaces/IVoiceSettings.ts"
 import {FormSelectUI} from "../../form/FormSelectUI.tsx";
 import {FormSwitchUI} from "../../form/FormSwitchUI.tsx";
 import {ContentPageLayout} from "../../templates/ContentPageLayout.tsx";
+import {Alert, AlertDescription, AlertTitle} from "../../ui/alert.tsx";
 import {Button} from "../../ui/button.tsx";
 import {Kbd} from "../../ui/kbd.tsx";
 import {Label} from "../../ui/label.tsx";
@@ -23,6 +25,7 @@ export function VoiceSettingsPageView() {
     const [voice, setVoice] = useGlobalState("voice");
     const {speechToText} = voice;
     const [localModels, setLocalModels] = useState<LocalModelStatus[]>([]);
+    const [shortcutErrors, setShortcutErrors] = useState<ShortcutRegistrationError[]>([]);
 
     const fetchLocalModels = useCallback(async () => {
         try {
@@ -35,6 +38,8 @@ export function VoiceSettingsPageView() {
 
     useEffect(() => {
         fetchLocalModels();
+        // Check for shortcut registration errors
+        setShortcutErrors(G.globalShortcuts.getRegistrationErrors());
     }, [fetchLocalModels]);
 
     const allModels = getAIModelsWithProvider();
@@ -77,6 +82,23 @@ export function VoiceSettingsPageView() {
     return (
         <ContentPageLayout title="Speech-to-Text" icon={AudioLines}>
             <div className="flex flex-col gap-8">
+                {shortcutErrors.length > 0 && (
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Keyboard Shortcut Conflict</AlertTitle>
+                        <AlertDescription>
+                            <p className="mb-2">The following keyboard shortcuts could not be registered because they are already in use by another application:</p>
+                            <ul className="list-disc list-inside text-xs space-y-1">
+                                {shortcutErrors.map((error, index) => (
+                                    <li key={index}>
+                                        <strong>{error.keystroke}</strong> ({error.label})
+                                    </li>
+                                ))}
+                            </ul>
+                            <p className="mt-3 text-xs">Please configure different shortcuts in Settings to enable this functionality.</p>
+                        </AlertDescription>
+                    </Alert>
+                )}
                 <div className="grid gap-2">
                     <Label>Plain Transcription Shortcut</Label>
                     <NavLink to={ROUTE_PATH.SETTINGS} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
