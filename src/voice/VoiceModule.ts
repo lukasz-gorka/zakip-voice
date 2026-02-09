@@ -93,22 +93,12 @@ export class VoiceModule {
         }
     }
 
-    /**
-     * Cancel an in-progress processing operation (transcription or enhancement).
-     * Aborts the Rust-side AI operation and resets all state.
-     */
-    /**
-     * Cancel any in-progress voice operation — recording, transcription, or enhancement.
-     * This is the single entry point for the global abort shortcut.
-     */
     public async cancelProcessing(): Promise<void> {
         Logger.info("[VoiceModule] Cancelling all voice processing");
 
-        // If there's an active recording session, cancel it directly
         if (this.currentSession) {
             try {
                 await backendAudio.cancelBackendRecording(this.currentSession.session_id);
-                Logger.info("[VoiceModule] Cancelled active recording session");
             } catch (error) {
                 Logger.warn("[VoiceModule] Failed to cancel recording session:", {error});
             }
