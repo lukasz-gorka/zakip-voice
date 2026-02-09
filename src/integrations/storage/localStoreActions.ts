@@ -13,14 +13,7 @@ export async function getAppData(): Promise<IAppLocalData> {
     const store = await getAppStore();
     const data = (await handleError(store.get<IAppLocalData>(LocalStoreKey.APP_DATA))) as IAppLocalData | undefined;
 
-    Logger.info("[getAppData] Raw data from appStore.get:", {data: data ? "EXISTS" : "NULL/UNDEFINED"});
-    if (data) {
-        Logger.info("[getAppData] Data keys:", {data: Object.keys(data)});
-        Logger.info("[getAppData] Provider collection length:", {data: data.provider?.collection?.length ?? "N/A"});
-    }
-
     if (!data) {
-        Logger.info("[getAppData] Returning default app data (no data found in store)");
         return createDefaultAppData();
     }
 

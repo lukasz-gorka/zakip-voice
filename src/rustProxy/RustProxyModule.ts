@@ -7,14 +7,6 @@ import type {LocalModelStatus} from "./types/LocalModelTypes.ts";
 export class RustProxyModule {
     public async chatCompletion(request: ChatCompletionRequest, operationId: string, credentials: ProviderCredentials): Promise<ChatCompletionResponse> {
         try {
-            Logger.debug("[RustProxy] chatCompletion", {
-                data: {
-                    model: request.model,
-                    messagesCount: request.messages.length,
-                    operationId,
-                },
-            });
-
             return await invoke<ChatCompletionResponse>("chat_completion", {request, operationId, credentials});
         } catch (error) {
             Logger.error("[RustProxy] chatCompletion failed", {error});
@@ -34,13 +26,6 @@ export class RustProxyModule {
         },
     ): Promise<() => void> {
         try {
-            Logger.debug("[RustProxy] chatCompletionStream", {
-                data: {
-                    model: request.model,
-                    sessionId,
-                },
-            });
-
             const chunkUnlisten = await listen<{content: string; citations?: string[]; search_results?: never; usage?: never}>(`stream-chunk-${sessionId}`, (event) => {
                 const {content, citations, search_results, usage} = event.payload;
 
@@ -90,14 +75,6 @@ export class RustProxyModule {
 
     public async transcribeAudio(operationId: string, audioData: Uint8Array, request: AudioTranscriptionRequest, credentials: ProviderCredentials): Promise<string> {
         try {
-            Logger.debug("[RustProxy] transcribeAudio", {
-                data: {
-                    model: request.model,
-                    audioSize: audioData.length,
-                    operationId,
-                },
-            });
-
             const audioArray = Array.from(audioData);
 
             return await invoke<string>("transcribe_audio", {
@@ -116,14 +93,6 @@ export class RustProxyModule {
 
     public async textToSpeech(operationId: string, request: TextToSpeechRequest, credentials: ProviderCredentials): Promise<Uint8Array> {
         try {
-            Logger.debug("[RustProxy] textToSpeech", {
-                data: {
-                    model: request.model,
-                    textLength: request.text.length,
-                    operationId,
-                },
-            });
-
             const response = await invoke<number[]>("text_to_speech", {
                 operationId,
                 text: request.text,
@@ -184,10 +153,6 @@ export class RustProxyModule {
 
     public async localTranscribeAudio(operationId: string, audioData: Uint8Array, modelId: string, language?: string): Promise<string> {
         try {
-            Logger.debug("[RustProxy] localTranscribeAudio", {
-                data: {modelId, audioSize: audioData.length, operationId},
-            });
-
             const audioArray = Array.from(audioData);
 
             return await invoke<string>("local_transcribe_audio", {

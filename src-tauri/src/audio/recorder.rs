@@ -106,7 +106,6 @@ struct RecordingState {
     session: AudioRecordingSession,
     samples: Arc<Mutex<Vec<f32>>>,
     stream: cpal::Stream,
-    app_handle: Option<tauri::AppHandle>,
 }
 
 /// Main function for the audio thread
@@ -139,7 +138,6 @@ fn audio_thread_main(receiver: Receiver<AudioCommand>) {
                     let _ = response.send(had_recording);
                 }
                 AudioCommand::Shutdown => {
-                    eprintln!("[AudioRecorder] Shutting down audio thread");
                     break;
                 }
             },
@@ -168,8 +166,6 @@ fn start_recording_internal(
     let device = host
         .default_input_device()
         .ok_or(AudioRecordingError::NoInputDevice)?;
-
-    eprintln!("[AudioRecorder] Using input device: {:?}", device.name());
 
     // Get supported config - prefer our target sample rate
     let supported_config = device
@@ -209,11 +205,6 @@ fn start_recording_internal(
     let stream_config = supported_config
         .with_sample_rate(cpal::SampleRate(sample_rate))
         .config();
-
-    eprintln!(
-        "[AudioRecorder] Stream config: {} Hz, {} channels",
-        stream_config.sample_rate.0, stream_config.channels
-    );
 
     // Create session info
     let session_id = format!("rec-{}", uuid_simple());
@@ -295,14 +286,11 @@ fn start_recording_internal(
         .play()
         .map_err(|e| AudioRecordingError::StreamInitFailed(e.to_string()))?;
 
-    eprintln!("[AudioRecorder] Recording started: {}", session_id);
-
     // Store recording state
     *active_recording = Some(RecordingState {
         session: session.clone(),
         samples: samples_buffer,
         stream,
-        app_handle,
     });
 
     Ok(session)
@@ -342,13 +330,6 @@ fn stop_recording_internal(
         guard.clone()
     };
 
-    eprintln!(
-        "[AudioRecorder] Recording stopped: {}, duration: {}ms, samples: {}",
-        session_id,
-        duration_ms,
-        samples.len()
-    );
-
     // Convert to WAV (mono output)
     let audio_data = encode_wav(&samples, state.session.sample_rate, 1)?;
 
@@ -372,8 +353,6 @@ fn cancel_recording_internal(
     }
 
     drop(state.stream);
-    eprintln!("[AudioRecorder] Recording cancelled: {}", session_id);
-
     Ok(())
 }
 

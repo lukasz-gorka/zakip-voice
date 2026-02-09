@@ -146,7 +146,6 @@ async fn main() {
             match event {
                 tauri::WindowEvent::CloseRequested { api, .. } => {
                     if label == "main" {
-                        eprintln!("[Window] Preventing close for main window, hiding instead");
                         if let Err(e) = window.hide() {
                             eprintln!("[Window] Failed to hide main window: {}", e);
                         }
@@ -163,10 +162,7 @@ async fn main() {
                 tauri::RunEvent::ExitRequested { api, .. } => {
                     // Only prevent exit if it wasn't requested from tray menu
                     if !QUIT_REQUESTED.load(Ordering::SeqCst) {
-                        eprintln!("[App] Preventing exit, app will stay in background");
                         api.prevent_exit();
-                    } else {
-                        eprintln!("[App] Quit requested from tray, exiting...");
                     }
                 }
                 _ => {}

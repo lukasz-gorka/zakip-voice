@@ -36,20 +36,8 @@ impl LocalModelManager {
         }
     }
 
-    pub fn models_dir(&self) -> &PathBuf {
-        &self.models_dir
-    }
-
     pub fn model_path(&self, entry: &LocalModelCatalogEntry) -> PathBuf {
         self.models_dir.join(&entry.filename)
-    }
-
-    pub fn is_downloaded(&self, model_id: &str) -> bool {
-        if let Some(entry) = find_catalog_entry(model_id) {
-            self.model_path(&entry).exists()
-        } else {
-            false
-        }
     }
 
     pub async fn list_models(&self) -> Vec<LocalModelStatus> {

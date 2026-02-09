@@ -1,4 +1,4 @@
-import {getRandomId} from "../../../dataGenerator/dataGenerator.ts";
+import {getRandomId} from "../../../utils/dataGenerator.ts";
 import {AIModelTag} from "./AIModelConfig.ts";
 
 export interface AIProviderModelInfo {

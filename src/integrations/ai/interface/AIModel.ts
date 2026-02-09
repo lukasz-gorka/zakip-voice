@@ -19,8 +19,3 @@ export function parseModelId(compositeId: string): ParsedModelId | null {
 export function createCompositeModelId(providerId: string, modelId: string): string {
     return `${providerId}${MODEL_PROVIDER_SEPARATOR}${modelId}`;
 }
-
-export function extractModelId(compositeOrSimpleId: string): string {
-    const parsed = parseModelId(compositeOrSimpleId);
-    return parsed ? parsed.modelId : compositeOrSimpleId;
-}

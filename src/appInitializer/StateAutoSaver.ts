@@ -101,7 +101,6 @@ export class StateAutoSaver {
             if (Object.keys(keysToSave).length > 0) {
                 await SecureStorage.setProviderKeys(keysToSave);
                 this.lastSavedKeys = keysToSave;
-                Logger.info(`[StateAutoSaver] Saved ${Object.keys(keysToSave).length} API keys to secure storage`);
             }
         } catch (error) {
             Logger.error("[StateAutoSaver] Failed to save provider API keys to secure storage", {error});
@@ -125,11 +124,9 @@ export class StateAutoSaver {
     public static async forceSave() {
         const state = store.getState();
         await this.saveState(state);
-        Logger.log("[StateAutoSaver] Forced save completed");
     }
 
     public static initializeLastSavedKeys(keys: Record<string, string>) {
         this.lastSavedKeys = {...keys};
-        Logger.info(`[StateAutoSaver] Initialized lastSavedKeys with ${Object.keys(keys).length} keys`);
     }
 }

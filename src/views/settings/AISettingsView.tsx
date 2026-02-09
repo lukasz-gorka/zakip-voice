@@ -35,7 +35,6 @@ export function AISettingsView() {
     const removeProvider = async (providerToRemove: AIProviderConfig) => {
         try {
             await SecureStorage.deleteProviderApiKey(providerToRemove.uuid);
-            Logger.info(`[ModelsSettings] Deleted API key for provider: ${providerToRemove.name}`);
         } catch (error) {
             Logger.warn(`[ModelsSettings] Failed to delete API key for provider: ${providerToRemove.name}`, {error});
         }

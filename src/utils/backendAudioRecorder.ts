@@ -10,7 +10,7 @@ export interface AudioRecordingSession {
 export interface AudioRecordingResult {
     session_id: string;
     duration_ms: number;
-    audio_data: number[]; // WAV bytes
+    audio_data: number[];
     sample_rate: number;
 }
 

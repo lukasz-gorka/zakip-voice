@@ -4,7 +4,6 @@ import {GlobalShortcut} from "./GlobalShortcut.ts";
 
 const registerKeystroke = async (shortcut: GlobalShortcut): Promise<{success: boolean; error?: string}> => {
     if (!shortcut.keystroke || shortcut.keystroke.trim() === "") {
-        Logger.info(`Skipping registration for shortcut with empty keystroke (id: ${shortcut.id})`);
         return {success: true};
     }
 
@@ -23,12 +22,9 @@ const registerKeystroke = async (shortcut: GlobalShortcut): Promise<{success: bo
 
         await register(shortcut.keystroke, (event) => {
             if (event.state === "Pressed") {
-                Logger.info(`Global shortcut pressed: ${shortcut.keystroke}`);
                 return shortcut.action();
             }
         });
-
-        Logger.info(`Successfully registered shortcut: ${shortcut.keystroke} (${shortcut.label})`);
         return {success: true};
     } catch (error) {
         const errorMsg = `Failed to register shortcut ${shortcut.keystroke} (${shortcut.label}). It may be in use by another application.`;
@@ -61,7 +57,6 @@ const registerAllGlobalShortcuts = async (shortcuts: Array<GlobalShortcut>): Pro
 export const clearAllGlobalShortcuts = async (): Promise<void> => {
     try {
         await unregisterAll();
-        Logger.info("All global shortcuts cleared successfully");
     } catch (error) {
         Logger.error("Failed to clear all shortcuts", {error});
     }

@@ -1,8 +1,8 @@
 import {G} from "../../appInitializer/module/G.ts";
 import {store} from "../../appInitializer/store";
-import {getRandomId} from "../../dataGenerator/dataGenerator.ts";
 import {Logger} from "../../logger/Logger.ts";
 import {ProviderCredentials} from "../../rustProxy/types/AITypes.ts";
+import {getRandomId} from "../../utils/dataGenerator.ts";
 import {createCompositeModelId, parseModelId} from "./interface/AIModel.ts";
 import {AIModelConfig} from "./interface/AIModelConfig.ts";
 import {AIProviderConfig} from "./interface/AIProviderConfig.ts";
@@ -110,46 +110,9 @@ export class AIServiceBackend {
             ...additionalData,
         };
 
-        Logger.debug("AI Request to proxy (non-stream)", {
-            console: true,
-            data: {
-                model,
-                baseURL: credentials.base_url,
-                stream: false,
-                toolIds: toolIds,
-                tools: tools,
-                messagesCount: messages.length,
-                messages: messages.map((msg) => ({
-                    role: msg.role,
-                    content: typeof msg.content === "string" ? msg.content.substring(0, 200) + (msg.content.length > 200 ? "..." : "") : msg.content,
-                })),
-            },
-        });
-
         try {
             const opId = operationId || getRandomId();
             const response = await G.rustProxy.chatCompletion(request, opId, credentials);
-
-            Logger.debug("AI Response from proxy (non-stream)", {
-                console: true,
-                data: {
-                    model: response.model,
-                    id: response.id,
-                    usage: response.usage,
-                    choices: response.choices?.map((choice: any) => ({
-                        index: choice.index,
-                        finish_reason: choice.finish_reason,
-                        message: {
-                            role: choice.message?.role,
-                            content:
-                                typeof choice.message?.content === "string"
-                                    ? choice.message.content.substring(0, 200) + (choice.message.content.length > 200 ? "..." : "")
-                                    : choice.message?.content,
-                        },
-                    })),
-                },
-            });
-
             return response;
         } catch (error) {
             Logger.error("AI Request failed", {
@@ -238,28 +201,11 @@ export class AIServiceBackend {
             ...additionalData,
         };
 
-        Logger.debug("AI Stream Request to proxy", {
-            console: true,
-            data: {
-                model,
-                baseURL: credentials.base_url,
-                stream: true,
-                messagesCount: messages.length,
-                messages: messages.map((msg) => ({
-                    role: msg.role,
-                    content: typeof msg.content === "string" ? msg.content.substring(0, 200) + (msg.content.length > 200 ? "..." : "") : msg.content,
-                })),
-            },
-        });
-
         const sessionId = `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-
-        let accumulatedContent = "";
 
         try {
             await G.rustProxy.chatCompletionStream(request, sessionId, credentials, {
                 onChunk: (chunk: string) => {
-                    accumulatedContent += chunk;
                     onChunk(chunk);
                 },
                 onMetadata: (metadata) => {
@@ -268,14 +214,6 @@ export class AIServiceBackend {
                     }
                 },
                 onDone: () => {
-                    Logger.debug("AI Stream Response from proxy (complete)", {
-                        console: true,
-                        data: {
-                            model,
-                            contentLength: accumulatedContent.length,
-                            contentPreview: accumulatedContent.substring(0, 200) + (accumulatedContent.length > 200 ? "..." : ""),
-                        },
-                    });
                     onDone();
                 },
                 onError: (errorMessage: string) => {
@@ -316,10 +254,6 @@ export class AIServiceBackend {
         },
         operationId?: string,
     ): Promise<{text: string; operationId: string}> {
-        if (!options.providerId || !options.model) {
-            Logger.warn(`[AIServiceBackend] No transcribe audio provider or model configured for provider: ${options.providerId}`);
-        }
-
         const opId = operationId || getRandomId();
 
         // Handle local model transcription
@@ -329,11 +263,7 @@ export class AIServiceBackend {
                 const audioData = new Uint8Array(arrayBuffer);
                 const language = options.language?.split("-")[0];
 
-                Logger.info(`[AIServiceBackend] Using local whisper model: ${options.model}`);
-
                 const transcription = await G.rustProxy.localTranscribeAudio(opId, audioData, options.model, language);
-
-                Logger.info(`[AIServiceBackend] Local transcription successful: ${transcription.length} characters`);
                 return {
                     text: transcription,
                     operationId: opId,
@@ -376,7 +306,6 @@ export class AIServiceBackend {
                 credentials,
             );
 
-            Logger.info(`[AIServiceBackend] Transcription successful: ${transcription.length} characters`);
             return {
                 text: transcription,
                 operationId: opId,
@@ -397,9 +326,6 @@ export class AIServiceBackend {
         },
         operationId?: string,
     ): Promise<{audio: ArrayBuffer; operationId: string}> {
-        if (!options.providerId || !options.model) {
-            Logger.warn(`[AIServiceBackend] No text-to-speech provider or model configured for provider: ${options.providerId}`);
-        }
         options.providerId = "openai";
 
         const providerId = options.providerId.toLowerCase();
@@ -430,8 +356,6 @@ export class AIServiceBackend {
                 },
                 credentials,
             );
-
-            Logger.info(`[AIServiceBackend] Text-to-speech successful: ${text.length} characters converted to speech`);
 
             const buffer = audioData.buffer;
 

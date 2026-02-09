@@ -19,14 +19,7 @@ export class StateInitializer {
     private static async mergeWithLocalData(): Promise<IGlobalState> {
         const defaultState = INITIAL_GLOBAL_STATE;
         const localData = await getAppData();
-
-        Logger.info("[StateInitializer] localData from store:", {data: localData});
-        Logger.info("[StateInitializer] providers count:", {data: localData?.provider?.collection?.length ?? "NO PROVIDERS"});
-
-        const merged = this.deepMerge(defaultState, localData);
-        Logger.info("[StateInitializer] merged state providers:", {data: merged?.provider?.collection?.length ?? "NO PROVIDERS"});
-
-        return merged;
+        return this.deepMerge(defaultState, localData);
     }
 
     private static async mergeWithSecureStorage(state: IGlobalState): Promise<IGlobalState> {
@@ -49,7 +42,6 @@ export class StateInitializer {
                 },
             };
 
-            Logger.info(`[StateInitializer] Loaded ${Object.keys(secureKeys).length} API keys from secure storage`);
             StateAutoSaver.initializeLastSavedKeys(secureKeys);
 
             return state;

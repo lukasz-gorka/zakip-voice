@@ -1,4 +1,4 @@
-import "../../assets/css/style.css";
+import "../../../public/css/style.css";
 import {emitTo, listen} from "@tauri-apps/api/event";
 import {getCurrentWebviewWindow} from "@tauri-apps/api/webviewWindow";
 import {useEffect, useRef, useState} from "react";

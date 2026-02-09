@@ -46,7 +46,6 @@ export class AutoUpdateModule {
         this.storeManager.setError(null);
 
         try {
-            Logger.info("[AutoUpdate] Checking for updates...");
             const update = await check();
             const currentVersion = await getVersion();
 
@@ -59,11 +58,6 @@ export class AutoUpdateModule {
                     body: update.body ?? undefined,
                 });
             } else {
-                if (update) {
-                    Logger.info("[AutoUpdate] Server version is not newer, ignoring", {data: {serverVersion: update.version, currentVersion}});
-                } else {
-                    Logger.info("[AutoUpdate] No update available");
-                }
                 this.pendingUpdate = null;
                 this.storeManager.setUpdateAvailable(false, null);
                 if (manual) {
@@ -92,25 +86,21 @@ export class AutoUpdateModule {
         this.storeManager.setError(null);
 
         try {
-            Logger.info("[AutoUpdate] Downloading and installing update...");
             let contentLength = 0;
             let downloaded = 0;
 
             await this.pendingUpdate.downloadAndInstall((event) => {
                 if (event.event === "Started") {
                     contentLength = event.data.contentLength ?? 0;
-                    Logger.info("[AutoUpdate] Download started", {data: {contentLength}});
                 } else if (event.event === "Progress") {
                     downloaded += event.data.chunkLength;
                     const progress = contentLength > 0 ? Math.round((downloaded / contentLength) * 100) : 0;
                     this.storeManager.setDownloadProgress(progress);
                 } else if (event.event === "Finished") {
-                    Logger.info("[AutoUpdate] Download finished");
                     this.storeManager.setDownloadProgress(100);
                 }
             });
 
-            Logger.info("[AutoUpdate] Update installed, relaunching...");
             await relaunch();
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);

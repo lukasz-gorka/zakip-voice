@@ -45,10 +45,6 @@ export class VoiceModule {
     };
 
     public async toggleRecordingForChat(withAI?: boolean): Promise<void> {
-        Logger.info("[VoiceModule] toggleRecordingForChat called", {
-            data: {withAI, isRecording: this.currentSession !== null, isStarting: this.isStartingRecording},
-        });
-
         if (withAI !== undefined) {
             this.storeManager.setEnableAIEnhancement(withAI);
         }
@@ -57,10 +53,8 @@ export class VoiceModule {
         const isStarting = this.isStartingRecording;
 
         if (isRecording) {
-            Logger.info("[VoiceModule] Stopping recording (session active)");
             await this.stopRecordingAndTranscribe();
         } else if (!isStarting) {
-            Logger.info("[VoiceModule] Starting recording (no session, not starting)");
             await this.startRecording();
         } else {
             Logger.warn("[VoiceModule] Recording start already in progress, ignoring duplicate call");
@@ -81,8 +75,6 @@ export class VoiceModule {
             this.storeManager.setTranscribingState(false);
             await this.unregisterEscapeShortcut();
             await this.closeRecordingPopup();
-
-            Logger.info("[VoiceModule] Recording cancelled");
         } catch (error) {
             this.currentSession = null;
             this.storeManager.setRecordingState(false);
@@ -94,8 +86,6 @@ export class VoiceModule {
     }
 
     public async cancelProcessing(): Promise<void> {
-        Logger.info("[VoiceModule] Cancelling all voice processing");
-
         if (this.currentSession) {
             try {
                 await backendAudio.cancelBackendRecording(this.currentSession.session_id);
@@ -108,7 +98,6 @@ export class VoiceModule {
         if (this.currentOperationId) {
             try {
                 await G.rustProxy.abortOperation(this.currentOperationId);
-                Logger.info("[VoiceModule] Aborted operation:", {data: this.currentOperationId});
             } catch (error) {
                 Logger.warn("[VoiceModule] Failed to abort operation (may have already finished):", {error});
             }
@@ -119,8 +108,6 @@ export class VoiceModule {
     }
 
     private async handlePopupAction(action: string): Promise<void> {
-        Logger.info("[VoiceModule] Popup action received:", {data: action});
-
         if (action === "stop") {
             // Stop recording → proceed to transcription
             await this.toggleRecordingForChat();
@@ -139,12 +126,9 @@ export class VoiceModule {
 
             await register("Escape", (event) => {
                 if (event.state === "Pressed") {
-                    Logger.info("[VoiceModule] Escape pressed, cancelling recording");
                     this.cancelRecording();
                 }
             });
-
-            Logger.info("[VoiceModule] Escape shortcut registered");
         } catch (error) {
             Logger.error("[VoiceModule] Failed to register Escape shortcut:", {error});
         }
@@ -155,7 +139,6 @@ export class VoiceModule {
             const registered = await isRegistered("Escape");
             if (registered) {
                 await unregister("Escape");
-                Logger.info("[VoiceModule] Escape shortcut unregistered");
             }
         } catch (error) {
             Logger.error("[VoiceModule] Failed to unregister Escape shortcut:", {error});
@@ -163,8 +146,6 @@ export class VoiceModule {
     }
 
     private async startRecording(isRetry: boolean = false): Promise<void> {
-        Logger.info("[VoiceModule] startRecording called", {data: {isRetry, isStartingRecording: this.isStartingRecording}});
-
         // Prevent concurrent recording starts
         if (this.isStartingRecording) {
             Logger.warn("[VoiceModule] Recording start already in progress, skipping");
@@ -172,17 +153,11 @@ export class VoiceModule {
         }
 
         this.isStartingRecording = true;
-        Logger.info("[VoiceModule] Set isStartingRecording = true");
 
         try {
             this.storeManager.setRecordingState(true);
-            Logger.info("[VoiceModule] Set recording state = true");
-
             await this.showRecordingPopup();
-            Logger.info("[VoiceModule] Recording popup shown");
 
-            // Start backend recording (permission already checked on app startup)
-            Logger.info("[VoiceModule] Starting backend recording...");
             this.currentSession = await backendAudio.startBackendRecording({
                 echo_cancellation: true,
                 noise_suppression: true,
@@ -275,7 +250,6 @@ export class VoiceModule {
             this.popupActionUnlisten = await listen<{action: string}>("voice-popup-action", (event) => {
                 this.handlePopupAction(event.payload.action);
             });
-            Logger.info("[VoiceModule] Popup action listener set up");
         } catch (error) {
             Logger.error("[VoiceModule] Failed to setup popup action listener:", {error});
         }
@@ -285,23 +259,16 @@ export class VoiceModule {
         if (this.popupActionUnlisten) {
             this.popupActionUnlisten();
             this.popupActionUnlisten = null;
-            Logger.info("[VoiceModule] Popup action listener cleaned up");
         }
     }
 
     private async showRecordingPopup(): Promise<void> {
         try {
-            Logger.info("[VoiceModule] Showing recording popup");
-
             await this.setupPopupActionListener();
 
             const existing = await WebviewWindow.getByLabel(RECORDING_POPUP_LABEL);
 
             if (existing) {
-                const isVisible = await existing.isVisible();
-
-                Logger.info("[VoiceModule] Existing popup found, visible:", {data: isVisible});
-
                 // Reposition to bottom-center of current monitor
                 const {primaryMonitor, currentMonitor} = await import("@tauri-apps/api/window");
                 const {PhysicalPosition} = await import("@tauri-apps/api/window");
@@ -319,7 +286,6 @@ export class VoiceModule {
                 await emitTo(RECORDING_POPUP_LABEL, `recording-popup-state-${RECORDING_POPUP_LABEL}`, {state: "initializing"});
                 await existing.show();
                 await existing.setFocus();
-                Logger.info("[VoiceModule] Existing recording popup shown");
                 return;
             }
 
@@ -329,16 +295,14 @@ export class VoiceModule {
             // Try to get the monitor where user is currently focused
             try {
                 monitor = await currentMonitor();
-                Logger.info("[VoiceModule] Using current monitor", {data: {size: monitor?.size, position: monitor?.position}});
             } catch (error) {
-                Logger.debug("[VoiceModule] Could not get current monitor, trying primary", {error});
+                // Fallback to primary monitor
             }
 
             // Fallback to primary monitor
             if (!monitor) {
                 try {
                     monitor = await primaryMonitor();
-                    Logger.info("[VoiceModule] Using primary monitor", {data: {size: monitor?.size, position: monitor?.position}});
                 } catch (error) {
                     Logger.warn("[VoiceModule] Could not get primary monitor, using defaults", {error});
                 }
@@ -356,10 +320,6 @@ export class VoiceModule {
             const offsetY = 12;
             const x = monitorX + (screenWidth - width) / 2;
             const y = monitorY + screenHeight - height - offsetY;
-
-            Logger.info("[VoiceModule] Creating popup window", {
-                data: {width, height, x, y, screenWidth, screenHeight, monitor: {size: monitor?.size, position: monitor?.position}},
-            });
 
             // Emit diagnostic info to main window
             await emitTo("main", "popup-diagnostic", {
@@ -385,8 +345,6 @@ export class VoiceModule {
                 transparent: false,
             });
 
-            Logger.info("[VoiceModule] Waiting for window creation...");
-
             await new Promise<void>((resolve, reject) => {
                 const timeout = setTimeout(() => {
                     reject(new Error("Window creation timeout"));
@@ -394,7 +352,6 @@ export class VoiceModule {
 
                 window.once("tauri://created", () => {
                     clearTimeout(timeout);
-                    Logger.info("[VoiceModule] Window created successfully");
                     resolve();
                 });
 
@@ -420,13 +377,6 @@ export class VoiceModule {
 
             await window.setPosition(new PhysicalPosition(finalX, finalY));
 
-            Logger.info("[VoiceModule] Showing window...", {
-                data: {
-                    actualSize: {width: actualWidth, height: actualHeight},
-                    finalPosition: {x: finalX, y: finalY},
-                },
-            });
-
             // Emit to main window for visibility
             await emitTo("main", "popup-diagnostic", {
                 action: "positioning",
@@ -445,12 +395,6 @@ export class VoiceModule {
 
             const isVisible = await window.isVisible();
             const position = await window.outerPosition();
-            Logger.info("[VoiceModule] Recording popup shown", {
-                data: {
-                    isVisible,
-                    position: {x: position.x, y: position.y},
-                },
-            });
 
             // Emit final status to main window
             await emitTo("main", "popup-diagnostic", {
@@ -479,7 +423,6 @@ export class VoiceModule {
             if (existing) {
                 await emitTo(RECORDING_POPUP_LABEL, `recording-popup-state-${RECORDING_POPUP_LABEL}`, {state: "initializing"});
                 await existing.hide();
-                Logger.info("[VoiceModule] Recording popup hidden");
             }
             this.cleanupPopupActionListener();
         } catch (error) {
@@ -498,7 +441,6 @@ export class VoiceModule {
 
             this.currentSession = null;
             this.storeManager.transitionRecordingToTranscribing();
-            Logger.info("[VoiceModule] Switching to transcribing state, duration:", {data: result.duration_ms});
             await this.unregisterEscapeShortcut();
             await emitTo(RECORDING_POPUP_LABEL, `recording-popup-state-${RECORDING_POPUP_LABEL}`, {state: "transcribing"});
 
@@ -525,12 +467,9 @@ export class VoiceModule {
             this.currentOperationId = null;
 
             if (this.abortRequested) {
-                Logger.info("[VoiceModule] Abort requested after transcription, stopping");
                 this.abortRequested = false;
                 return;
             }
-
-            Logger.info(`[VoiceModule] Transcription successful: ${transcription}`);
 
             let finalText = transcription;
             const enableAI = settings.enableAIEnhancement ?? true;
@@ -544,7 +483,6 @@ export class VoiceModule {
                 finalText = await this.enhanceTranscription(transcription);
 
                 if (this.abortRequested) {
-                    Logger.info("[VoiceModule] Abort requested after enhancement, stopping");
                     this.abortRequested = false;
                     return;
                 }
@@ -552,16 +490,9 @@ export class VoiceModule {
                 this.storeManager.setEnhancingState(false);
             } else {
                 this.storeManager.setTranscribingState(false);
-                if (enableAI && !enhancementProviderExists) {
-                    Logger.info("[VoiceModule] AI enhancement skipped (provider not configured or missing)");
-                } else {
-                    Logger.info("[VoiceModule] AI enhancement skipped (plain transcription mode)");
-                }
             }
 
             await this.closeRecordingPopup();
-
-            Logger.info(`[VoiceModule] Final text: ${finalText}`);
 
             const historyItem: TranscriptionHistoryItem = {
                 id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -586,7 +517,6 @@ export class VoiceModule {
             // If abort was requested, this error is expected — just clean up silently
             if (this.abortRequested) {
                 this.abortRequested = false;
-                Logger.info("[VoiceModule] Processing aborted by user");
                 return;
             }
 
@@ -619,8 +549,6 @@ export class VoiceModule {
                 playCopySound();
             }
 
-            Logger.info("[VoiceModule] Copied to clipboard");
-
             // Auto-paste if enabled
             if (settings.speechToText.autoPasteAfterTranscription) {
                 await this.simulatePaste();
@@ -633,7 +561,6 @@ export class VoiceModule {
     private async simulatePaste(): Promise<void> {
         try {
             await invoke("simulate_paste");
-            Logger.info("[VoiceModule] Auto-paste executed");
         } catch (error) {
             Logger.error("[VoiceModule] Failed to simulate paste:", {error});
 
@@ -716,10 +643,6 @@ export class VoiceModule {
                 ],
             };
 
-            Logger.info("[VoiceModule] Sending transcription for enhancement", {
-                data: {model, textLength: rawText.length},
-            });
-
             const response = await G.rustProxy.chatCompletion(request, operationId, credentials);
 
             this.currentOperationId = null;
@@ -730,10 +653,6 @@ export class VoiceModule {
                 Logger.warn("[VoiceModule] Enhancement returned empty, using raw text");
                 return rawText;
             }
-
-            Logger.info("[VoiceModule] Enhancement successful", {
-                data: {originalLength: rawText.length, enhancedLength: enhancedText.length},
-            });
 
             return enhancedText;
         } catch (error) {

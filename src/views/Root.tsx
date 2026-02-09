@@ -1,4 +1,4 @@
-import "../assets/css/style.css";
+import "../../public/css/style.css";
 import {useEffect} from "react";
 import {BrowserRouter, Navigate, Route, Routes} from "react-router-dom";
 

@@ -5,7 +5,6 @@ export class SecureStorage {
     public static async set(key: string, value: string): Promise<void> {
         try {
             await invoke("secure_storage_set", {key, value});
-            Logger.info(`[SecureStorage] Stored credential: ${key}`);
         } catch (error) {
             Logger.error(`[SecureStorage] Failed to store credential: ${key}`, {error});
             throw new Error(`Failed to store secure credential: ${error}`);
@@ -24,7 +23,6 @@ export class SecureStorage {
     public static async delete(key: string): Promise<void> {
         try {
             await invoke("secure_storage_delete", {key});
-            Logger.info(`[SecureStorage] Deleted credential: ${key}`);
         } catch (error) {
             Logger.error(`[SecureStorage] Failed to delete credential: ${key}`, {error});
             throw new Error(`Failed to delete secure credential: ${error}`);
@@ -48,7 +46,6 @@ export class SecureStorage {
     public static async setProviderKeys(providerKeys: Record<string, string>): Promise<void> {
         try {
             await invoke("secure_storage_set_provider_keys", {providerKeys});
-            Logger.info(`[SecureStorage] Stored ${Object.keys(providerKeys).length} provider API keys`);
         } catch (error) {
             Logger.error("[SecureStorage] Failed to store provider keys", {error});
             throw new Error(`Failed to store provider keys: ${error}`);
