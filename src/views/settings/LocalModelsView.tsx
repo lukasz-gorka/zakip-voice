@@ -85,7 +85,6 @@ export function LocalModelsView() {
         <div className="flex flex-col gap-6">
             <p className="text-sm text-muted-foreground">Download and use free speech-to-text models locally. No API key required. Models run entirely on your device.</p>
 
-            {/* Downloaded models */}
             {downloadedModels.length > 0 && (
                 <div className="flex flex-col gap-3">
                     <Label className="flex items-center gap-2">
@@ -106,7 +105,6 @@ export function LocalModelsView() {
                 </div>
             )}
 
-            {/* Available to download */}
             {availableModels.length > 0 && (
                 <div className="flex flex-col gap-3">
                     <Label className="flex items-center gap-2">
@@ -139,6 +137,21 @@ interface LocalModelCardProps {
     onDelete: (modelId: string) => void;
 }
 
+function RatingDots({value, max = 5, color}: {value: number; max?: number; color: "speed" | "accuracy"}) {
+    const colorClass = color === "speed" ? "text-amber-500" : "text-emerald-500";
+    const dimClass = "text-muted-foreground/30";
+
+    return (
+        <span className="flex items-center gap-0.5">
+            {Array.from({length: max}, (_, i) => (
+                <span key={i} className={`text-[8px] ${i < value ? colorClass : dimClass}`}>
+                    ●
+                </span>
+            ))}
+        </span>
+    );
+}
+
 function LocalModelCard({model, isDownloading, downloadProgress, isDeleting, onDownload, onDelete}: LocalModelCardProps) {
     return (
         <Card className="p-4 flex flex-col gap-2">
@@ -153,6 +166,9 @@ function LocalModelCard({model, isDownloading, downloadProgress, isDeleting, onD
                             Downloaded
                         </Badge>
                     )}
+                    <Badge variant="outline" className="text-[10px]">
+                        {model.language_support === "multilingual" ? "Multilingual" : "English Only"}
+                    </Badge>
                 </div>
                 <div className="flex items-center gap-2">
                     {model.downloaded ? (
@@ -166,6 +182,14 @@ function LocalModelCard({model, isDownloading, downloadProgress, isDeleting, onD
                         </Button>
                     )}
                 </div>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                    Speed <RatingDots value={model.speed_rating} color="speed" />
+                </span>
+                <span className="flex items-center gap-1.5">
+                    Accuracy <RatingDots value={model.accuracy_rating} color="accuracy" />
+                </span>
             </div>
             <p className="text-xs text-muted-foreground">{model.description}</p>
             {isDownloading && downloadProgress !== undefined && (

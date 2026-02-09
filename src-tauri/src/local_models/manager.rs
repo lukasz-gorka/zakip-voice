@@ -14,6 +14,9 @@ pub struct LocalModelStatus {
     pub downloaded: bool,
     pub downloading: bool,
     pub download_progress: f64,
+    pub speed_rating: u8,
+    pub accuracy_rating: u8,
+    pub language_support: String,
 }
 
 pub struct LocalModelManager {
@@ -65,6 +68,9 @@ impl LocalModelManager {
                     downloaded,
                     downloading: is_downloading,
                     download_progress: if is_downloading { 0.0 } else if downloaded { 100.0 } else { 0.0 },
+                    speed_rating: entry.speed_rating,
+                    accuracy_rating: entry.accuracy_rating,
+                    language_support: entry.language_support,
                 }
             })
             .collect()

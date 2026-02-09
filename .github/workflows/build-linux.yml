@@ -72,14 +72,24 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
+          BUNDLE_DIR="src-tauri/target/release/bundle"
           echo "=== All bundle files ==="
-          find src-tauri/target/release/bundle -type f | sort
+          find "$BUNDLE_DIR" -type f | sort
 
-          UPDATER_FILE=$(find src-tauri/target/release/bundle -name "*.AppImage.tar.gz" | head -n 1)
-          SIG_FILE="${UPDATER_FILE}.sig"
+          # Find the .AppImage.tar.gz (updater target)
+          UPDATER_FILE=""
+          for f in "$BUNDLE_DIR"/appimage/*.AppImage.tar.gz; do
+            [ -f "$f" ] && UPDATER_FILE="$f" && break
+          done
+
+          if [ -z "$UPDATER_FILE" ]; then
+            echo "ERROR: No *.AppImage.tar.gz found in $BUNDLE_DIR/appimage/"
+            ls -la "$BUNDLE_DIR/appimage/" 2>/dev/null || echo "(dir not found)"
+            exit 1
+          fi
 
           echo "Updater file: $UPDATER_FILE"
-          echo "Expected sig: $SIG_FILE"
+          SIG_FILE="${UPDATER_FILE}.sig"
 
           if [ -f "$SIG_FILE" ] && [ -s "$SIG_FILE" ]; then
             echo "Signature file exists and is non-empty: $SIG_FILE"
@@ -94,7 +104,7 @@ jobs:
             fi
           fi
 
-          echo "=== Signature file content (first 80 chars) ==="
+          echo "=== Signature content (first 80 chars) ==="
           head -c 80 "$SIG_FILE" && echo "..."
 
       - name: Upload artifacts

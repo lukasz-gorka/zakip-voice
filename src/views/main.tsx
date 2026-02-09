@@ -1,7 +1,7 @@
-import {storeFileName} from "@/integrations/storage/localStoreInit.ts";
 import ReactDOM from "react-dom/client";
 import {App} from "../App.tsx";
 import {init} from "../appInitializer/AppInitializer.ts";
+import {storeFileName} from "../integrations/storage/localStoreInit.ts";
 import {LoadingScreen} from "./components/LoadingScreen.tsx";
 
 const container = document.getElementById("root") as HTMLElement;

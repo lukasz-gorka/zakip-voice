@@ -19,9 +19,4 @@ export default defineConfig({
         port: 1421,
         strictPort: true,
     },
-    resolve: {
-        alias: {
-            "@": path.resolve(__dirname, "./src"),
-        },
-    },
 });

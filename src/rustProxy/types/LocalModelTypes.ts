@@ -7,4 +7,7 @@ export interface LocalModelStatus {
     downloaded: boolean;
     downloading: boolean;
     download_progress: number;
+    speed_rating: number;
+    accuracy_rating: number;
+    language_support: "english-only" | "multilingual";
 }

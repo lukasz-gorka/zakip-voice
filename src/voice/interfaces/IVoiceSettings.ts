@@ -23,6 +23,7 @@ export interface TranscriptionHistoryItem {
     timestamp: number;
     rawText?: string;
     isEnhanced?: boolean;
+    modelName?: string;
 }
 
 export interface IVoiceSettings {

@@ -166,19 +166,22 @@ export function TranscriptionCard({item, header, isLoading, loadingBadge, scroll
                 </Collapsible>
             )}
 
-            <CardFooter className="p-4 pt-0 flex-shrink-0">
-                <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
-                    <div className="flex items-center gap-3">
-                        {timeAgo && (
-                            <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {timeAgo}
-                            </span>
-                        )}
-                        {!scrollContent && item && <span>{wordCount} words</span>}
+            <CardFooter className="p-4 pt-2 flex-shrink-0">
+                <div className="flex items-end justify-between w-full text-xs text-muted-foreground">
+                    <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-3">
+                            {timeAgo && (
+                                <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {timeAgo}
+                                </span>
+                            )}
+                            {!scrollContent && item && <span>{wordCount} words</span>}
+                        </div>
+                        {item?.modelName && <span className="text-muted-foreground/60">{item.modelName}</span>}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-end gap-2">
                         {/* Show original toggle */}
                         {!scrollContent && item?.isEnhanced && item.rawText && (
                             <Button
@@ -204,6 +207,22 @@ export function TranscriptionCard({item, header, isLoading, loadingBadge, scroll
                             </Button>
                         )}
 
+                        {/* Delete button */}
+                        {onDelete && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDelete();
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80 h-auto w-auto p-0"
+                                title="Delete transcription"
+                            >
+                                <Trash2 className="w-3 h-3" />
+                            </Button>
+                        )}
+
                         {/* Copy indicator */}
                         {canCopy && (
                             <span className={`flex items-center gap-1 transition-all duration-300 ${copied ? "text-green-500" : ""}`}>
@@ -219,22 +238,6 @@ export function TranscriptionCard({item, header, isLoading, loadingBadge, scroll
                                     </>
                                 )}
                             </span>
-                        )}
-
-                        {/* Delete button */}
-                        {onDelete && (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDelete();
-                                }}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80 h-6 w-6"
-                                title="Delete transcription"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
                         )}
                     </div>
                 </div>

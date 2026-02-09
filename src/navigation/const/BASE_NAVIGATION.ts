@@ -1,4 +1,4 @@
-import {AudioLines, Bot, HardDrive, History, Mic, Settings, Sparkles} from "lucide-react";
+import {AudioLines, Bot, History, Mic, Settings, Sparkles} from "lucide-react";
 import {NavigationItem} from "../../types/NavigationItem.ts";
 import {ROUTE_PATH} from "./ROUTE_PATH.ts";
 
@@ -14,24 +14,19 @@ export const BASE_NAVIGATION: NavigationItem[] = [
         icon: History,
     },
     {
-        label: "AI Models",
+        label: "Models",
         path: ROUTE_PATH.MODELS,
         icon: Bot,
-    },
-    {
-        label: "Local Models",
-        path: ROUTE_PATH.LOCAL_MODELS,
-        icon: HardDrive,
-    },
-    {
-        label: "Enhancer",
-        path: ROUTE_PATH.ENHANCER,
-        icon: Sparkles,
     },
     {
         label: "Speech-to-Text",
         path: ROUTE_PATH.VOICE_SETTINGS,
         icon: AudioLines,
+    },
+    {
+        label: "Enhancer",
+        path: ROUTE_PATH.ENHANCER,
+        icon: Sparkles,
     },
     {
         label: "Settings",

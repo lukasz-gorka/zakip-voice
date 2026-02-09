@@ -1,11 +1,9 @@
-import {AlertTriangle, Check, Command, X} from "lucide-react";
-import {MouseEvent, useEffect, useRef, useState} from "react";
+import {AlertTriangle, Check, Command, Pencil, X} from "lucide-react";
+import {MouseEvent, useCallback, useEffect, useRef, useState} from "react";
 import {isMacOS} from "../../appEnvironment/appEnvironment.ts";
 import {G} from "../../appInitializer/module/G.ts";
 import {formatKeyForDisplay, formatKeysForValue, MODIFIER_KEYS, parseKeystroke} from "../../utils/keystroke";
-import {Badge} from "./badge.tsx";
 import {Button} from "./button.tsx";
-import {Input} from "./input.tsx";
 import {Kbd} from "./kbd.tsx";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "./tooltip.tsx";
 
@@ -32,20 +30,23 @@ export function KeyboardShortcutInput({
     const [keys, setKeys] = useState<string[]>(parseKeystroke(initialValue));
     const [isEditing, setIsEditing] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const currentKeystroke = keys.length > 0 ? formatKeysForValue(keys) : "";
     const conflictingItem = checkConflict && currentKeystroke ? checkConflict(currentKeystroke) : undefined;
     const hasConflict = Boolean(conflictingItem);
 
+    const handleCancel = useCallback(() => {
+        setKeys(parseKeystroke(initialValue));
+        setIsRecording(false);
+        setIsEditing(false);
+        onCancel?.();
+    }, [initialValue, onCancel]);
+
     const startRecording = () => {
         if (disabled || !editable) return;
         setIsRecording(true);
         setKeys([]);
-
-        if (inputRef.current) {
-            inputRef.current.focus();
-        }
     };
 
     const stopRecording = () => {
@@ -60,13 +61,6 @@ export function KeyboardShortcutInput({
         G.globalShortcuts.refreshShortcuts();
     };
 
-    const handleCancel = () => {
-        setKeys(parseKeystroke(initialValue));
-        setIsRecording(false);
-        setIsEditing(false);
-        onCancel?.();
-    };
-
     const handleClearShortcut = (event: MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
         setKeys([]);
@@ -79,6 +73,20 @@ export function KeyboardShortcutInput({
         if (disabled || !editable) return;
         setIsEditing(true);
     };
+
+    // Outside click cancels editing
+    useEffect(() => {
+        if (!isEditing) return;
+
+        const handleOutsideClick = (event: globalThis.MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                handleCancel();
+            }
+        };
+
+        document.addEventListener("mousedown", handleOutsideClick);
+        return () => document.removeEventListener("mousedown", handleOutsideClick);
+    }, [isEditing, handleCancel]);
 
     const keydownHandler = (event: KeyboardEvent) => {
         if (!isRecording) return;
@@ -169,96 +177,94 @@ export function KeyboardShortcutInput({
 
     const displayValue = keys.length > 0 ? keys.map(formatKeyForDisplay).join(" + ") : "";
 
+    // Read-only mode
     if (!editable) {
         return (
-            <div className={`flex items-center justify-center gap-1 h-9 px-3 rounded-md border border-input bg-muted/20 text-sm ${className}`}>
+            <div className={`flex items-center gap-2 h-9 ${className}`}>
                 {initialValue ? (
-                    initialValue.split("+").map((key, index) => <Kbd key={index}>{formatKeyForDisplay(key)}</Kbd>)
+                    <div className="flex items-center gap-1">
+                        {initialValue.split("+").map((key, index) => (
+                            <Kbd key={index}>{formatKeyForDisplay(key)}</Kbd>
+                        ))}
+                    </div>
                 ) : (
-                    <span className="text-muted-foreground">Not set</span>
+                    <span className="text-sm text-muted-foreground">Not set</span>
                 )}
             </div>
         );
     }
 
+    // View mode
     if (!isEditing) {
         return (
-            <div className={`flex items-center justify-center gap-1 h-9 px-3 rounded-md border border-input bg-muted/20 text-sm ${className}`}>
+            <div
+                className={`group flex items-center gap-2 h-9 px-3 rounded-md transition-colors hover:bg-muted/50 ${disabled ? "opacity-50 pointer-events-none" : "cursor-pointer"} ${className}`}
+                onClick={handleStartEdit}
+            >
                 {initialValue ? (
                     <>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Badge
-                                        variant="secondary"
-                                        className="cursor-pointer hover:bg-muted-foreground/20 gap-1"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleStartEdit();
-                                        }}
-                                    >
-                                        {parseKeystroke(initialValue).map((key, index) => (
-                                            <Kbd key={index}>{formatKeyForDisplay(key)}</Kbd>
-                                        ))}
-                                    </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p className="text-xs">Click to edit shortcut</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
-                            onClick={(event) => handleClearShortcut(event)}
-                            disabled={disabled}
-                        >
-                            <X className="h-3 w-3" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                            {parseKeystroke(initialValue).map((key, index) => (
+                                <Kbd key={index}>{formatKeyForDisplay(key)}</Kbd>
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-1 ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Pencil className="h-3 w-3 text-muted-foreground" />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 w-5 p-0 hover:bg-destructive/10 hover:text-destructive"
+                                onClick={(event) => handleClearShortcut(event)}
+                            >
+                                <X className="h-3 w-3" />
+                            </Button>
+                        </div>
                     </>
                 ) : (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartEdit();
-                        }}
-                        disabled={disabled}
-                    >
-                        <Command className="h-3 w-3 mr-1" />
+                    <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Command className="h-3.5 w-3.5" />
                         Add shortcut
-                    </Button>
+                    </span>
                 )}
             </div>
         );
     }
 
+    // Editing mode
     return (
         <TooltipProvider>
-            <div className={`flex items-center justify-center gap-2 h-9 px-3 rounded-md border border-input bg-muted/20 text-sm ${className}`}>
-                <div className="relative flex-1">
-                    <Input
-                        ref={inputRef}
-                        value={displayValue}
-                        readOnly
-                        placeholder={isRecording ? placeholder : "Click to record"}
-                        className={`h-6 text-xs text-center ${hasConflict ? "border-destructive" : ""}`}
-                        onClick={startRecording}
-                    />
-                    {hasConflict && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className="absolute right-1 top-1/2 transform -translate-y-1/2">
-                                    <AlertTriangle className="h-3 w-3 text-destructive" />
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p className="text-xs">Shortcut already used by: {conflictingItem}</p>
-                            </TooltipContent>
-                        </Tooltip>
+            <div ref={containerRef} className={`flex items-center gap-2 h-9 px-3 rounded-md bg-muted/30 ring-2 ring-ring/20 ${className}`}>
+                <div className="flex-1 flex items-center justify-center min-h-[24px]">
+                    {isRecording ? (
+                        displayValue ? (
+                            <div className="flex items-center gap-1">
+                                {keys.map((key, index) => (
+                                    <Kbd key={index}>{formatKeyForDisplay(key)}</Kbd>
+                                ))}
+                            </div>
+                        ) : (
+                            <span className="text-xs text-muted-foreground animate-pulse">{placeholder}</span>
+                        )
+                    ) : displayValue ? (
+                        <div className="flex items-center gap-1 cursor-pointer" onClick={startRecording}>
+                            {keys.map((key, index) => (
+                                <Kbd key={index}>{formatKeyForDisplay(key)}</Kbd>
+                            ))}
+                            {hasConflict && (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <AlertTriangle className="h-3.5 w-3.5 text-destructive ml-1" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p className="text-xs">Shortcut already used by: {conflictingItem}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            )}
+                        </div>
+                    ) : (
+                        <span className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors" onClick={startRecording}>
+                            Click to record
+                        </span>
                     )}
                 </div>
                 <div className="flex gap-1">

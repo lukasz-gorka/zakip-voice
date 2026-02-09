@@ -88,7 +88,8 @@ export function VoiceHomeView() {
 
     const sttProviders = getProvidersWithTag("speech-to-text");
     const chatProviders = getProvidersWithTag("chat");
-    const hasSttModels = sttProviders.length > 0;
+    const isLocalProvider = voice.speechToText?.providerId === "local";
+    const hasSttModels = isLocalProvider || sttProviders.length > 0;
     const hasChatModels = chatProviders.length > 0;
 
     const isRecording = voice.isRecording ?? false;

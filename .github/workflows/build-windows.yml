@@ -92,14 +92,25 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         shell: bash
         run: |
+          BUNDLE_DIR="src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
           echo "=== All bundle files ==="
-          find src-tauri/target/x86_64-pc-windows-msvc/release/bundle -type f | sort
+          find "$BUNDLE_DIR" -type f 2>/dev/null | sort || ls -R "$BUNDLE_DIR"
 
-          UPDATER_FILE=$(find src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis -name "*-setup.exe" | head -n 1)
-          SIG_FILE="${UPDATER_FILE}.sig"
+          # Find the NSIS setup exe (updater target)
+          UPDATER_FILE=""
+          for f in "$BUNDLE_DIR"/nsis/*-setup.exe; do
+            [ -f "$f" ] && UPDATER_FILE="$f" && break
+          done
+
+          if [ -z "$UPDATER_FILE" ]; then
+            echo "ERROR: No *-setup.exe found in $BUNDLE_DIR/nsis/"
+            echo "Contents of nsis dir:"
+            ls -la "$BUNDLE_DIR/nsis/" 2>/dev/null || echo "(dir not found)"
+            exit 1
+          fi
 
           echo "Updater file: $UPDATER_FILE"
-          echo "Expected sig: $SIG_FILE"
+          SIG_FILE="${UPDATER_FILE}.sig"
 
           if [ -f "$SIG_FILE" ] && [ -s "$SIG_FILE" ]; then
             echo "Signature file exists and is non-empty: $SIG_FILE"
@@ -114,7 +125,7 @@ jobs:
             fi
           fi
 
-          echo "=== Signature file content (first 80 chars) ==="
+          echo "=== Signature content (first 80 chars) ==="
           head -c 80 "$SIG_FILE" && echo "..."
 
       - name: Upload artifacts

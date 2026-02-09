@@ -15,6 +15,9 @@ pub struct LocalModelCatalogEntry {
     pub size_mb: u64,
     pub download_url: String,
     pub filename: String,
+    pub speed_rating: u8,
+    pub accuracy_rating: u8,
+    pub language_support: String,
 }
 
 struct CatalogDef {
@@ -25,6 +28,9 @@ struct CatalogDef {
     size_mb: u64,
     download_url: &'static str,
     filename: &'static str,
+    speed_rating: u8,
+    accuracy_rating: u8,
+    language_support: &'static str,
 }
 
 const CATALOG_DEFS: &[CatalogDef] = &[
@@ -36,6 +42,9 @@ const CATALOG_DEFS: &[CatalogDef] = &[
         size_mb: 75,
         download_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin",
         filename: "ggml-tiny.bin",
+        speed_rating: 5,
+        accuracy_rating: 2,
+        language_support: "multilingual",
     },
     CatalogDef {
         id: "whisper-base",
@@ -45,6 +54,9 @@ const CATALOG_DEFS: &[CatalogDef] = &[
         size_mb: 142,
         download_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
         filename: "ggml-base.bin",
+        speed_rating: 4,
+        accuracy_rating: 3,
+        language_support: "multilingual",
     },
     CatalogDef {
         id: "whisper-small",
@@ -54,6 +66,9 @@ const CATALOG_DEFS: &[CatalogDef] = &[
         size_mb: 466,
         download_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
         filename: "ggml-small.bin",
+        speed_rating: 3,
+        accuracy_rating: 4,
+        language_support: "multilingual",
     },
     CatalogDef {
         id: "whisper-medium",
@@ -63,6 +78,9 @@ const CATALOG_DEFS: &[CatalogDef] = &[
         size_mb: 1500,
         download_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin",
         filename: "ggml-medium.bin",
+        speed_rating: 2,
+        accuracy_rating: 4,
+        language_support: "multilingual",
     },
     CatalogDef {
         id: "whisper-large-v3-turbo",
@@ -72,6 +90,9 @@ const CATALOG_DEFS: &[CatalogDef] = &[
         size_mb: 1600,
         download_url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin",
         filename: "ggml-large-v3-turbo.bin",
+        speed_rating: 2,
+        accuracy_rating: 5,
+        language_support: "multilingual",
     },
 ];
 
@@ -86,6 +107,9 @@ pub fn get_model_catalog() -> Vec<LocalModelCatalogEntry> {
             size_mb: def.size_mb,
             download_url: def.download_url.to_string(),
             filename: def.filename.to_string(),
+            speed_rating: def.speed_rating,
+            accuracy_rating: def.accuracy_rating,
+            language_support: def.language_support.to_string(),
         })
         .collect()
 }

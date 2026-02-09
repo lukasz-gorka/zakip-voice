@@ -545,8 +545,9 @@ export class VoiceModule {
             let finalText = transcription;
             const enableAI = settings.enableAIEnhancement ?? true;
             const hasEnhancementConfigured = settings.speechToText.enhancementProviderId && settings.speechToText.enhancementModel;
+            const enhancementProviderExists = hasEnhancementConfigured && this.isEnhancementProviderValid();
 
-            if (enableAI && hasEnhancementConfigured) {
+            if (enableAI && enhancementProviderExists) {
                 this.storeManager.transitionTranscribingToEnhancing();
                 await emitTo(RECORDING_POPUP_LABEL, `recording-popup-state-${RECORDING_POPUP_LABEL}`, {state: "enhancing"});
 
@@ -561,8 +562,8 @@ export class VoiceModule {
                 this.storeManager.setEnhancingState(false);
             } else {
                 this.storeManager.setTranscribingState(false);
-                if (enableAI && !hasEnhancementConfigured) {
-                    Logger.info("[VoiceModule] AI enhancement skipped (not configured)");
+                if (enableAI && !enhancementProviderExists) {
+                    Logger.info("[VoiceModule] AI enhancement skipped (provider not configured or missing)");
                 } else {
                     Logger.info("[VoiceModule] AI enhancement skipped (plain transcription mode)");
                 }
@@ -576,10 +577,12 @@ export class VoiceModule {
                 id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
                 text: finalText,
                 timestamp: Date.now(),
-                ...(enableAI && {
-                    rawText: transcription,
-                    isEnhanced: true,
-                }),
+                modelName: settings.speechToText.model,
+                ...(enableAI &&
+                    enhancementProviderExists && {
+                        rawText: transcription,
+                        isEnhanced: true,
+                    }),
             };
 
             this.storeManager.addTranscriptionToHistory(historyItem);
@@ -666,6 +669,14 @@ export class VoiceModule {
                 Logger.warn("[VoiceModule] Auto-paste failed (permissions likely not granted yet)");
             }
         }
+    }
+
+    private isEnhancementProviderValid(): boolean {
+        const globalState = store.getState();
+        const settings = this.state();
+        const providerId = settings.speechToText.enhancementProviderId;
+        if (!providerId) return false;
+        return globalState.provider.collection.some((p) => p.id === providerId);
     }
 
     private getEnhancementCredentials(): ProviderCredentials {

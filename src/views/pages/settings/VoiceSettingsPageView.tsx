@@ -18,11 +18,6 @@ import {Kbd} from "../../ui/kbd.tsx";
 import {Label} from "../../ui/label.tsx";
 import {Separator} from "../../ui/separator.tsx";
 
-const LANGUAGES = [
-    {code: "pl-PL", name: "Polski"},
-    {code: "en-US", name: "English (US)"},
-];
-
 export function VoiceSettingsPageView() {
     const navigate = useNavigate();
     const [voice, setVoice] = useGlobalState("voice");
@@ -103,7 +98,7 @@ export function VoiceSettingsPageView() {
                         }}
                         items={providerItems}
                     />
-                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => navigate(isLocalProvider ? ROUTE_PATH.LOCAL_MODELS : ROUTE_PATH.MODELS)}>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => navigate(ROUTE_PATH.MODELS)}>
                         <Settings className="w-4 h-4" />
                     </Button>
                 </div>
@@ -112,12 +107,6 @@ export function VoiceSettingsPageView() {
                     value={speechToText.model}
                     onValueChange={(value) => updateSpeechToText({model: value})}
                     items={sttModels.map((model) => ({value: model.id, name: model.name || model.id}))}
-                />
-                <FormSelectUI
-                    label="Language"
-                    value={speechToText.language}
-                    onValueChange={(value) => updateSpeechToText({language: value})}
-                    items={LANGUAGES.map((lang) => ({value: lang.code, name: lang.name}))}
                 />
 
                 <Separator />
