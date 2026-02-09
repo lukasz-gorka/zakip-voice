@@ -320,6 +320,30 @@ export class AIServiceBackend {
             Logger.warn(`[AIServiceBackend] No transcribe audio provider or model configured for provider: ${options.providerId}`);
         }
 
+        const opId = operationId || getRandomId();
+
+        // Handle local model transcription
+        if (options.providerId === "local") {
+            try {
+                const arrayBuffer = await audioFile.arrayBuffer();
+                const audioData = new Uint8Array(arrayBuffer);
+                const language = options.language?.split("-")[0];
+
+                Logger.info(`[AIServiceBackend] Using local whisper model: ${options.model}`);
+
+                const transcription = await G.rustProxy.localTranscribeAudio(opId, audioData, options.model, language);
+
+                Logger.info(`[AIServiceBackend] Local transcription successful: ${transcription.length} characters`);
+                return {
+                    text: transcription,
+                    operationId: opId,
+                };
+            } catch (error) {
+                Logger.error("[AIServiceBackend] Local audio transcription failed", {error});
+                throw new Error(`Local audio transcription failed: ${error}`);
+            }
+        }
+
         const providerId = options.providerId.toLowerCase();
         const models = this.getModels();
 
@@ -335,7 +359,6 @@ export class AIServiceBackend {
         }
 
         const credentials = this.getCredentialsForModel(modelConfig);
-        const opId = operationId || getRandomId();
         const compositeModelId = createCompositeModelId(modelConfig.providerId, modelConfig.id);
 
         try {

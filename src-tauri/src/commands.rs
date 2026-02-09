@@ -1,5 +1,6 @@
 use crate::ai::{AIProxy, ChatCompletionRequest, ChatCompletionResponse, ModelInfo, ProviderCredentials};
 use crate::audio::{AudioRecordingManager, AudioRecordingConfig, AudioRecordingSession, AudioRecordingResult};
+use crate::local_models::{LocalModelManager, LocalModelStatus};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::collections::HashMap;
@@ -434,4 +435,81 @@ pub async fn reset_audio_recording(
     state: State<'_, AppState>,
 ) -> Result<bool, String> {
     Ok(state.audio_manager.force_reset())
+}
+
+// ============================================================================
+// Local Model Commands
+// ============================================================================
+
+/// List all available local models with their download status
+#[tauri::command]
+pub async fn local_models_list(
+    manager: State<'_, Arc<LocalModelManager>>,
+) -> Result<Vec<LocalModelStatus>, String> {
+    Ok(manager.list_models().await)
+}
+
+/// Download a local model by ID. Emits progress events: "local-model-download-progress-{model_id}"
+#[tauri::command]
+pub async fn local_model_download(
+    app: AppHandle,
+    manager: State<'_, Arc<LocalModelManager>>,
+    model_id: String,
+) -> Result<(), String> {
+    let mgr = Arc::clone(&manager);
+    let event_name = format!("local-model-download-progress-{}", model_id);
+    let app_clone = app.clone();
+
+    mgr.download_model(model_id, move |progress| {
+        let _ = app_clone.emit(&event_name, progress);
+    })
+    .await
+}
+
+/// Delete a downloaded local model
+#[tauri::command]
+pub async fn local_model_delete(
+    manager: State<'_, Arc<LocalModelManager>>,
+    model_id: String,
+) -> Result<(), String> {
+    manager.delete_model(&model_id).await
+}
+
+/// Transcribe audio using a local whisper model
+#[tauri::command]
+pub async fn local_transcribe_audio(
+    state: State<'_, AppState>,
+    manager: State<'_, Arc<LocalModelManager>>,
+    operation_id: String,
+    audio_data: Vec<u8>,
+    model_id: String,
+    language: Option<String>,
+) -> Result<String, String> {
+    let mgr = Arc::clone(&manager);
+    let operations = Arc::clone(&state.active_operations);
+
+    with_abort_and_timeout(
+        operations,
+        operation_id,
+        300,
+        "Local transcription timeout: Operation took longer than 5 minutes",
+        async move {
+            let model_path = mgr
+                .get_model_file_path(&model_id)
+                .ok_or_else(|| format!("Model {} is not downloaded", model_id))?;
+
+            // Run whisper inference on a blocking thread (CPU-bound)
+            let lang = language;
+            tokio::task::spawn_blocking(move || {
+                crate::local_models::LocalWhisperEngine::transcribe(
+                    &model_path,
+                    &audio_data,
+                    lang.as_deref(),
+                )
+            })
+            .await
+            .map_err(|e| format!("Whisper task failed: {}", e))?
+        },
+    )
+    .await
 }

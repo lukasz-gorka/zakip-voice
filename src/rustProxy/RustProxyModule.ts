@@ -2,6 +2,7 @@ import {invoke} from "@tauri-apps/api/core";
 import {listen} from "@tauri-apps/api/event";
 import {Logger} from "../logger/Logger.ts";
 import type {AudioTranscriptionRequest, ChatCompletionRequest, ChatCompletionResponse, ProviderCredentials, TextToSpeechRequest} from "./types/AITypes.ts";
+import type {LocalModelStatus} from "./types/LocalModelTypes.ts";
 
 export class RustProxyModule {
     public async chatCompletion(request: ChatCompletionRequest, operationId: string, credentials: ProviderCredentials): Promise<ChatCompletionResponse> {
@@ -144,6 +145,60 @@ export class RustProxyModule {
             await invoke("abort_operation", {operationId});
         } catch (error) {
             Logger.error("[RustProxy] abortOperation failed", {error});
+        }
+    }
+
+    // ========================================================================
+    // Local Model Commands
+    // ========================================================================
+
+    public async localModelsList(): Promise<LocalModelStatus[]> {
+        try {
+            return await invoke<LocalModelStatus[]>("local_models_list");
+        } catch (error) {
+            Logger.error("[RustProxy] localModelsList failed", {error});
+            throw new Error(`Failed to list local models: ${error}`);
+        }
+    }
+
+    public async localModelDownload(modelId: string, onProgress: (progress: number) => void): Promise<void> {
+        const unlisten = await listen<number>(`local-model-download-progress-${modelId}`, (event) => {
+            onProgress(event.payload);
+        });
+
+        try {
+            await invoke("local_model_download", {modelId});
+        } finally {
+            unlisten();
+        }
+    }
+
+    public async localModelDelete(modelId: string): Promise<void> {
+        try {
+            await invoke("local_model_delete", {modelId});
+        } catch (error) {
+            Logger.error("[RustProxy] localModelDelete failed", {error});
+            throw new Error(`Failed to delete model: ${error}`);
+        }
+    }
+
+    public async localTranscribeAudio(operationId: string, audioData: Uint8Array, modelId: string, language?: string): Promise<string> {
+        try {
+            Logger.debug("[RustProxy] localTranscribeAudio", {
+                data: {modelId, audioSize: audioData.length, operationId},
+            });
+
+            const audioArray = Array.from(audioData);
+
+            return await invoke<string>("local_transcribe_audio", {
+                operationId,
+                audioData: audioArray,
+                modelId,
+                language,
+            });
+        } catch (error) {
+            Logger.error("[RustProxy] localTranscribeAudio failed", {error});
+            throw new Error(`Local transcription failed: ${error}`);
         }
     }
 }

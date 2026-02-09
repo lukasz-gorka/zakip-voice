@@ -1,10 +1,13 @@
+import {invoke} from "@tauri-apps/api/core";
 import {AudioLines, Keyboard, RotateCcw, Settings} from "lucide-react";
+import {useCallback, useEffect, useState} from "react";
 import {NavLink, useNavigate} from "react-router-dom";
 import {G} from "../../../appInitializer/module/G.ts";
 import {useGlobalState} from "../../../hooks/useGlobalState.ts";
 import {getAIModelsWithProvider, getProvidersWithTag} from "../../../integrations/ai/aiModels/aiModels.ts";
 import {AIModelTag} from "../../../integrations/ai/interface/AIModelConfig.ts";
 import {ROUTE_PATH} from "../../../navigation/const/ROUTE_PATH.ts";
+import type {LocalModelStatus} from "../../../rustProxy/types/LocalModelTypes.ts";
 import {formatKeyForDisplay, parseKeystroke} from "../../../utils/keystroke.ts";
 import {SpeechToTextSettings} from "../../../voice/interfaces/IVoiceSettings.ts";
 import {FormSelectUI} from "../../form/FormSelectUI.tsx";
@@ -24,14 +27,48 @@ export function VoiceSettingsPageView() {
     const navigate = useNavigate();
     const [voice, setVoice] = useGlobalState("voice");
     const {speechToText} = voice;
+    const [localModels, setLocalModels] = useState<LocalModelStatus[]>([]);
+
+    const fetchLocalModels = useCallback(async () => {
+        try {
+            const models = await invoke<LocalModelStatus[]>("local_models_list");
+            setLocalModels(models.filter((m) => m.downloaded));
+        } catch {
+            // Local models not available
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchLocalModels();
+    }, [fetchLocalModels]);
 
     const allModels = getAIModelsWithProvider();
     const filterByTag = (tag: AIModelTag) => allModels.filter((m) => m.tags?.includes(tag));
     const filterByTagAndProvider = (tag: AIModelTag, providerId: string) => allModels.filter((m) => m.tags?.includes(tag) && m.providerId === providerId);
 
-    const sttModels = speechToText.providerId ? filterByTagAndProvider("speech-to-text", speechToText.providerId) : filterByTag("speech-to-text");
-    const hasSttModels = sttModels.length > 0;
+    const isLocalProvider = speechToText.providerId === "local";
+    const sttModels = isLocalProvider
+        ? localModels.map((m) => ({
+              id: m.id,
+              name: m.name,
+              compositeId: m.id,
+              providerId: "local",
+              providerName: "Local",
+              providerUuid: "local",
+              enabled: true,
+              tags: ["speech-to-text" as AIModelTag],
+          }))
+        : speechToText.providerId
+          ? filterByTagAndProvider("speech-to-text", speechToText.providerId)
+          : filterByTag("speech-to-text");
+    const hasSttModels = sttModels.length > 0 || localModels.length > 0;
     const sttProviders = getProvidersWithTag("speech-to-text");
+
+    // Build provider list with local option
+    const providerItems = [
+        ...(localModels.length > 0 ? [{value: "local", name: "Local (Free)"}] : []),
+        ...sttProviders.map((provider) => ({value: provider.id, name: provider.name})),
+    ];
 
     const updateSpeechToText = (updates: Partial<SpeechToTextSettings>) => {
         setVoice({
@@ -61,10 +98,12 @@ export function VoiceSettingsPageView() {
                     <FormSelectUI
                         label="Provider"
                         value={speechToText.providerId}
-                        onValueChange={(value) => updateSpeechToText({providerId: value})}
-                        items={sttProviders.map((provider) => ({value: provider.id, name: provider.name}))}
+                        onValueChange={(value) => {
+                            updateSpeechToText({providerId: value, model: ""});
+                        }}
+                        items={providerItems}
                     />
-                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => navigate(ROUTE_PATH.MODELS)}>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => navigate(isLocalProvider ? ROUTE_PATH.LOCAL_MODELS : ROUTE_PATH.MODELS)}>
                         <Settings className="w-4 h-4" />
                     </Button>
                 </div>
@@ -72,7 +111,7 @@ export function VoiceSettingsPageView() {
                     label="Model"
                     value={speechToText.model}
                     onValueChange={(value) => updateSpeechToText({model: value})}
-                    items={sttModels.map((model) => ({value: model.id, name: model.name || ""}))}
+                    items={sttModels.map((model) => ({value: model.id, name: model.name || model.id}))}
                 />
                 <FormSelectUI
                     label="Language"

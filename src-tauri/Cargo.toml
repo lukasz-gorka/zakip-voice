@@ -51,6 +51,8 @@ enigo = "0.3"
 # Audio recording
 cpal = "0.15"
 hound = "3.5"
+# Local whisper model inference
+whisper-rs = "0.12"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

@@ -12,6 +12,7 @@ static QUIT_REQUESTED: AtomicBool = AtomicBool::new(false);
 mod ai;
 mod audio;
 mod commands;
+mod local_models;
 mod secure_storage;
 
 use commands::AppState;
@@ -73,13 +74,22 @@ async fn main() {
             commands::stop_audio_recording,
             commands::cancel_audio_recording,
             commands::reset_audio_recording,
+            // Local model commands
+            commands::local_models_list,
+            commands::local_model_download,
+            commands::local_model_delete,
+            commands::local_transcribe_audio,
         ])
         .setup(|app| {
             // Initialize Secure Storage with app data directory
             let app_data_dir = app.path().app_data_dir()
                 .expect("Failed to get app data directory");
-            let secure_storage = secure_storage::SecureStorage::new(app_data_dir);
+            let secure_storage = secure_storage::SecureStorage::new(app_data_dir.clone());
+
+            // Initialize Local Model Manager
+            let local_model_manager = Arc::new(local_models::LocalModelManager::new(app_data_dir));
             app.manage(secure_storage);
+            app.manage(local_model_manager);
 
             // Create tray menu items
             let show_item = MenuItemBuilder::with_id("show", "Pokaż").build(app)?;

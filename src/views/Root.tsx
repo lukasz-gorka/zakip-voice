@@ -7,6 +7,7 @@ import {StateAutoSaver} from "../appInitializer/StateAutoSaver.ts";
 import {Logger} from "../logger/Logger.ts";
 import {ROUTE_PATH} from "../navigation/const/ROUTE_PATH.ts";
 import {EnhancerPageView} from "./pages/EnhancerPageView.tsx";
+import {LocalModelsPageView} from "./pages/LocalModelsPageView.tsx";
 import {ModelsPageView} from "./pages/ModelsPageView.tsx";
 
 import {SettingsPageView} from "./pages/settings/SettingsPageView.tsx";
@@ -41,6 +42,7 @@ function Root() {
                     <Route index element={<VoiceHomeView />} />
                     <Route path={ROUTE_PATH.HISTORY} element={<VoiceHistoryView />} />
                     <Route path={ROUTE_PATH.MODELS} element={<ModelsPageView />} />
+                    <Route path={ROUTE_PATH.LOCAL_MODELS} element={<LocalModelsPageView />} />
                     <Route path={ROUTE_PATH.ENHANCER} element={<EnhancerPageView />} />
                     <Route path={ROUTE_PATH.VOICE_SETTINGS} element={<VoiceSettingsPageView />} />
                     <Route path={ROUTE_PATH.SETTINGS} element={<SettingsPageView />} />
