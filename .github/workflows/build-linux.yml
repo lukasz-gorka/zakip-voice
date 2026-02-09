@@ -62,50 +62,80 @@ jobs:
           releaseDraft: false
           prerelease: false
 
-      - name: Apply Wayland compatibility fixes
-        run: |
-          chmod +x scripts/fix-appimage-linux.sh
-          ./scripts/fix-appimage-linux.sh
-
-      - name: Verify and fix signature files
+      - name: Apply Wayland fixes, rebuild AppImage and sign
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           BUNDLE_DIR="src-tauri/target/release/bundle"
-          echo "=== All bundle files ==="
-          find "$BUNDLE_DIR" -type f | sort
+          APPIMAGE_DIR="$BUNDLE_DIR/appimage"
 
-          # Find the .AppImage.tar.gz (updater target)
-          UPDATER_FILE=""
-          for f in "$BUNDLE_DIR"/appimage/*.AppImage.tar.gz; do
-            [ -f "$f" ] && UPDATER_FILE="$f" && break
+          echo "=== Bundle contents after tauri-action ==="
+          ls -la "$APPIMAGE_DIR/" 2>/dev/null || echo "(appimage dir not found)"
+
+          # Step 1: Apply Wayland compatibility fix to AppDir
+          chmod +x scripts/fix-appimage-linux.sh
+          ./scripts/fix-appimage-linux.sh
+
+          # Step 2: Find the original AppImage (tauri-action may have deleted it after upload)
+          APPIMAGE_FILE=""
+          for f in "$APPIMAGE_DIR"/*.AppImage; do
+            [ -f "$f" ] && APPIMAGE_FILE="$f" && break
           done
 
-          if [ -z "$UPDATER_FILE" ]; then
-            echo "ERROR: No *.AppImage.tar.gz found in $BUNDLE_DIR/appimage/"
-            ls -la "$BUNDLE_DIR/appimage/" 2>/dev/null || echo "(dir not found)"
+          # Step 3: Rebuild AppImage from modified AppDir if needed
+          APPDIR=""
+          for d in "$APPIMAGE_DIR"/*.AppDir; do
+            [ -d "$d" ] && APPDIR="$d" && break
+          done
+
+          if [ -z "$APPDIR" ]; then
+            echo "ERROR: No AppDir found in $APPIMAGE_DIR"
             exit 1
           fi
 
-          echo "Updater file: $UPDATER_FILE"
-          SIG_FILE="${UPDATER_FILE}.sig"
-
-          if [ -f "$SIG_FILE" ] && [ -s "$SIG_FILE" ]; then
-            echo "Signature file exists and is non-empty: $SIG_FILE"
+          # Determine output filename
+          if [ -n "$APPIMAGE_FILE" ]; then
+            OUTPUT_APPIMAGE="$APPIMAGE_FILE"
+            echo "Found existing AppImage: $OUTPUT_APPIMAGE"
           else
-            echo "WARNING: Signature file missing or empty, signing manually..."
-            if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
-              pnpm tauri signer sign -k "$TAURI_SIGNING_PRIVATE_KEY" -p "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" "$UPDATER_FILE"
-              echo "Manually signed: $UPDATER_FILE"
-            else
-              echo "ERROR: TAURI_SIGNING_PRIVATE_KEY not set, cannot sign!"
-              exit 1
-            fi
+            OUTPUT_APPIMAGE="$APPIMAGE_DIR/zakip-voice_${{ inputs.version }}_amd64.AppImage"
+            echo "AppImage not found, will rebuild as: $OUTPUT_APPIMAGE"
           fi
 
+          # Download appimagetool and rebuild
+          echo "Rebuilding AppImage from modified AppDir..."
+          APPIMAGETOOL="$APPIMAGE_DIR/appimagetool-x86_64.AppImage"
+          if [ ! -f "$APPIMAGETOOL" ]; then
+            curl -Lo "$APPIMAGETOOL" "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+            chmod +x "$APPIMAGETOOL"
+          fi
+
+          # Remove old AppImage to avoid "file exists" error
+          rm -f "$OUTPUT_APPIMAGE"
+          ARCH=x86_64 "$APPIMAGETOOL" --no-appstream "$APPDIR" "$OUTPUT_APPIMAGE"
+          echo "Rebuilt AppImage: $OUTPUT_APPIMAGE"
+
+          # Step 4: Create .tar.gz for updater
+          TARGZ_FILE="${OUTPUT_APPIMAGE}.tar.gz"
+          echo "Creating tar.gz: $TARGZ_FILE"
+          tar -czf "$TARGZ_FILE" -C "$(dirname "$OUTPUT_APPIMAGE")" "$(basename "$OUTPUT_APPIMAGE")"
+
+          # Step 5: Sign the .tar.gz
+          echo "Signing $TARGZ_FILE..."
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            pnpm tauri signer sign -k "$TAURI_SIGNING_PRIVATE_KEY" -p "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" "$TARGZ_FILE"
+            echo "Signed successfully!"
+          else
+            echo "ERROR: TAURI_SIGNING_PRIVATE_KEY not set, cannot sign!"
+            exit 1
+          fi
+
+          echo "=== Final bundle files ==="
+          ls -la "$APPIMAGE_DIR"/*.AppImage "$APPIMAGE_DIR"/*.tar.gz "$APPIMAGE_DIR"/*.sig 2>/dev/null
+
           echo "=== Signature content (first 80 chars) ==="
-          head -c 80 "$SIG_FILE" && echo "..."
+          head -c 80 "${TARGZ_FILE}.sig" && echo "..."
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
