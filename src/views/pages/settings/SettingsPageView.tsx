@@ -1,5 +1,5 @@
 import {Keyboard, Settings} from "lucide-react";
-import {UpdateSettingsSection} from "../../../autoUpdate/components/UpdateSettingsSection.tsx";
+import {UpdateSettingsSection} from "../../../autoUpdate/view/UpdateSettingsSection.tsx";
 import {useGlobalState} from "../../../hooks/useGlobalState.ts";
 import {SpeechToTextSettings} from "../../../voice/interfaces/IVoiceSettings.ts";
 import {DebugConsoleView} from "../../settings/DebugConsoleView.tsx";

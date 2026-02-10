@@ -1,6 +1,6 @@
-import {IAutoUpdateState} from "../../../../autoUpdate/interfaces/IAutoUpdateState.ts";
-import {AIProviderConfig} from "../../../../integrations/ai/interface/AIProviderConfig.ts";
-import {IVoiceSettings} from "../../../../voice/interfaces/IVoiceSettings.ts";
+import {IAutoUpdateState} from "../../../autoUpdate/interfaces/IAutoUpdateState.ts";
+import {AIProviderConfig} from "../../../integrations/ai/interface/AIProviderConfig.ts";
+import {IVoiceSettings} from "../../../voice/interfaces/IVoiceSettings.ts";
 import {IGlobalShortcutsState} from "./IGlobalShortcutsState.ts";
 
 export interface IViewState {

@@ -1,6 +1,6 @@
-import {invoke} from "@tauri-apps/api/core";
 import {ChevronDown, Download, Plus, Search, Trash2, X} from "lucide-react";
 import {useState} from "react";
+import {G} from "../../appInitializer/module/G.ts";
 import {AIModelTag, detectModelTags} from "../../integrations/ai/interface/AIModelConfig.ts";
 import {AIProviderConfig, AIProviderModelInfo, PROVIDER_TEMPLATES} from "../../integrations/ai/interface/AIProviderConfig.ts";
 import {Logger} from "../../logger/Logger.ts";
@@ -91,10 +91,7 @@ export function ProviderCard({provider, update, remove}: ProviderCardProps) {
         setFetchError(null);
 
         try {
-            const models = await invoke<{id: string; object: string; owned_by?: string}[]>("fetch_provider_models", {
-                apiKey: provider.apiKey,
-                baseUrl: provider.baseURL,
-            });
+            const models = await G.rustProxy.fetchProviderModels(provider.apiKey, provider.baseURL);
             setFetchedModels(models.map((m) => ({id: m.id, name: m.id})));
         } catch (error) {
             Logger.error("Failed to fetch models", {error});

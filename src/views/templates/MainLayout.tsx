@@ -1,7 +1,6 @@
 import {PanelLeft, PanelLeftClose} from "lucide-react";
-import {ReactNode, useCallback} from "react";
-import {GlobalStore} from "../../appInitializer/store/GlobalStore.ts";
-import {useGlobalStore} from "../../hooks/useGlobalStore.ts";
+import {ReactNode} from "react";
+import {useGlobalState} from "../../hooks/useGlobalState.ts";
 import {CommandPanel} from "../commandPanel/CommandPanel.tsx";
 import {SidebarInset, SidebarProvider} from "../ui/sidebar.tsx";
 import {Toaster} from "../ui/toaster.tsx";
@@ -12,11 +11,12 @@ interface IMainLayout {
 }
 
 export function MainLayout({children}: IMainLayout) {
-    const {sidebarOpen} = useGlobalStore("view");
-    const setSidebarOpen = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-        const newValue = typeof value === "function" ? value(GlobalStore.getStoreData("view").sidebarOpen) : value;
-        GlobalStore.updateState("view", {sidebarOpen: newValue});
-    }, []);
+    const [view, setView] = useGlobalState("view");
+    const {sidebarOpen} = view;
+    const setSidebarOpen = (value: boolean | ((prev: boolean) => boolean)) => {
+        const newValue = typeof value === "function" ? value(sidebarOpen) : value;
+        setView({sidebarOpen: newValue});
+    };
 
     return (
         <div className="w-full h-full overflow-hidden bg-background gradient-overlay flex flex-col relative">

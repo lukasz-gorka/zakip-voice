@@ -1,4 +1,3 @@
-import {invoke} from "@tauri-apps/api/core";
 import {AlertTriangle, AudioLines, Keyboard, RotateCcw, Settings} from "lucide-react";
 import {useCallback, useEffect, useState} from "react";
 import {NavLink, useNavigate} from "react-router-dom";
@@ -8,7 +7,7 @@ import {useGlobalState} from "../../../hooks/useGlobalState.ts";
 import {getAIModelsWithProvider, getProvidersWithTag} from "../../../integrations/ai/aiModels/aiModels.ts";
 import {AIModelTag} from "../../../integrations/ai/interface/AIModelConfig.ts";
 import {ROUTE_PATH} from "../../../navigation/const/ROUTE_PATH.ts";
-import type {LocalModelStatus} from "../../../rustProxy/types/LocalModelTypes.ts";
+import type {LocalModelStatus} from "../../../rustProxy/interface/LocalModelTypes.ts";
 import {formatKeyForDisplay, parseKeystroke} from "../../../utils/keystroke.ts";
 import {SpeechToTextSettings} from "../../../voice/interfaces/IVoiceSettings.ts";
 import {FormSelectUI} from "../../form/FormSelectUI.tsx";
@@ -29,7 +28,7 @@ export function VoiceSettingsPageView() {
 
     const fetchLocalModels = useCallback(async () => {
         try {
-            const models = await invoke<LocalModelStatus[]>("local_models_list");
+            const models = await G.rustProxy.localModelsList();
             setLocalModels(models.filter((m) => m.downloaded));
         } catch {
             // Local models not available
@@ -38,7 +37,6 @@ export function VoiceSettingsPageView() {
 
     useEffect(() => {
         fetchLocalModels();
-        // Check for shortcut registration errors
         setShortcutErrors(G.globalShortcuts.getRegistrationErrors());
     }, [fetchLocalModels]);
 

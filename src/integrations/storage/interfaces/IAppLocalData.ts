@@ -1,4 +1,4 @@
-import {IGlobalState} from "../../../appInitializer/store/global/interfaces/IGlobalState.ts";
+import {IGlobalState} from "../../../appInitializer/store/interfaces/IGlobalState.ts";
 
 export type IAppLocalData = {
     meta: {

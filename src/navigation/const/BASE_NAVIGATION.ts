@@ -1,5 +1,5 @@
 import {AudioLines, Bot, History, Mic, Settings, Sparkles} from "lucide-react";
-import {NavigationItem} from "../../types/NavigationItem.ts";
+import {NavigationItem} from "../interface/NavigationItem.ts";
 import {ROUTE_PATH} from "./ROUTE_PATH.ts";
 
 export const BASE_NAVIGATION: NavigationItem[] = [

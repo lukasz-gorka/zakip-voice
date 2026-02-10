@@ -1,4 +1,4 @@
-import {GlobalStore} from "../appInitializer/store/GlobalStore.ts";
+import {store} from "../appInitializer/store";
 import {Logger} from "../logger/Logger.ts";
 import {toggleWindow} from "../utils/windowUtils.ts";
 import {GlobalShortcut} from "./GlobalShortcut.ts";
@@ -14,7 +14,7 @@ export class GlobalShortcuts {
     public async refreshShortcuts(): Promise<void> {
         const allShortcuts: GlobalShortcut[] = [];
 
-        const voiceState = GlobalStore.getStoreData("voice");
+        const voiceState = store.getState().voice;
         const stt = voiceState.speechToText;
 
         if (stt?.globalShortcut?.trim()) {

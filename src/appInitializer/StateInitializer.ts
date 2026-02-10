@@ -4,8 +4,8 @@ import {Logger} from "../logger/Logger.ts";
 import {StateAutoSaver} from "./StateAutoSaver.ts";
 import {StateCleanup} from "./StateCleanup.ts";
 import {store} from "./store";
-import {INITIAL_GLOBAL_STATE} from "./store/global/const/INITIAL_GLOBAL_STATE.ts";
-import {IGlobalState} from "./store/global/interfaces/IGlobalState.ts";
+import {INITIAL_GLOBAL_STATE} from "./store/const/INITIAL_GLOBAL_STATE.ts";
+import {IGlobalState} from "./store/interfaces/IGlobalState.ts";
 
 export class StateInitializer {
     public static async init(): Promise<void> {

@@ -6,7 +6,7 @@ import {SecureStorage} from "../integrations/storage/secureStorage.ts";
 import {Logger} from "../logger/Logger.ts";
 import {StateCleanup} from "./StateCleanup.ts";
 import {store} from "./store";
-import {IGlobalState} from "./store/global/interfaces/IGlobalState.ts";
+import {IGlobalState} from "./store/interfaces/IGlobalState.ts";
 
 export class StateAutoSaver {
     private static unsubscribe: (() => void) | null = null;

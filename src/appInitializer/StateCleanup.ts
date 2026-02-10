@@ -1,4 +1,4 @@
-import {IGlobalState} from "./store/global/interfaces/IGlobalState.ts";
+import {IGlobalState} from "./store/interfaces/IGlobalState.ts";
 
 export class StateCleanup {
     public static cleanEphemeralState(state: IGlobalState): Partial<IGlobalState> {

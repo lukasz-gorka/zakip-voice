@@ -1,4 +1,3 @@
-import {invoke} from "@tauri-apps/api/core";
 import {emitTo, listen} from "@tauri-apps/api/event";
 import {WebviewWindow} from "@tauri-apps/api/webviewWindow";
 import {isRegistered, register, unregister} from "@tauri-apps/plugin-global-shortcut";
@@ -6,17 +5,15 @@ import {G} from "../appInitializer/module/G.ts";
 import {store} from "../appInitializer/store";
 import {AIService} from "../integrations/ai/AIService.ts";
 import {Logger} from "../logger/Logger.ts";
-import {ChatCompletionRequest, ProviderCredentials} from "../rustProxy/types/AITypes.ts";
-import {playCopySound, playStartSound, playStopSound} from "../sound/sounds.ts";
-import * as backendAudio from "../utils/backendAudioRecorder.ts";
-import {resetBackendRecording} from "../utils/backendAudioRecorder.ts";
+import {ChatCompletionRequest, ProviderCredentials} from "../rustProxy/interface/AITypes.ts";
+import type {AudioRecordingResult, AudioRecordingSession} from "../rustProxy/interface/AudioTypes.ts";
+import {playCopySound, playStartSound, playStopSound} from "../utils/audioNotifications.ts";
 import {copyToClipboard} from "../utils/clipboard.ts";
 import {toast} from "../views/ui/use-toast.ts";
+import {RECORDING_POPUP_LABEL} from "./const/RECORDING_POPUP_LABEL.ts";
 import {DEFAULT_ENHANCEMENT_PROMPT} from "./const/TRANSCRIPTION_ENHANCEMENT_PROMPT.ts";
 import {IVoiceSettings, TranscriptionHistoryItem} from "./interfaces/IVoiceSettings.ts";
 import {VoiceStoreManager} from "./store/VoiceStoreManager.ts";
-
-const RECORDING_POPUP_LABEL = "voice-recording-popup";
 
 interface VoiceModuleDeps {
     storeManager: VoiceStoreManager;
@@ -27,7 +24,7 @@ export class VoiceModule {
     private storeManager: VoiceStoreManager;
     private ai: AIService;
 
-    private currentSession: backendAudio.AudioRecordingSession | null = null;
+    private currentSession: AudioRecordingSession | null = null;
     private popupActionUnlisten: (() => void) | null = null;
     private currentOperationId: string | null = null;
     private abortRequested: boolean = false;
@@ -68,7 +65,7 @@ export class VoiceModule {
         }
 
         try {
-            await backendAudio.cancelBackendRecording(this.currentSession.session_id);
+            await G.rustProxy.cancelAudioRecording(this.currentSession.session_id);
             this.currentSession = null;
 
             this.storeManager.setRecordingState(false);
@@ -88,13 +85,12 @@ export class VoiceModule {
     public async cancelProcessing(): Promise<void> {
         if (this.currentSession) {
             try {
-                await backendAudio.cancelBackendRecording(this.currentSession.session_id);
+                await G.rustProxy.cancelAudioRecording(this.currentSession.session_id);
             } catch (error) {
                 Logger.warn("[VoiceModule] Failed to cancel recording session:", {error});
             }
         }
 
-        // If there's an in-flight AI operation (transcription/enhancement), abort it
         if (this.currentOperationId) {
             try {
                 await G.rustProxy.abortOperation(this.currentOperationId);
@@ -103,16 +99,13 @@ export class VoiceModule {
             }
         }
 
-        // forceReset clears all flags including abortRequested, currentSession, currentOperationId
         await this.forceReset();
     }
 
     private async handlePopupAction(action: string): Promise<void> {
         if (action === "stop") {
-            // Stop recording → proceed to transcription
             await this.toggleRecordingForChat();
         } else if (action === "cancel") {
-            // Cancel in-progress processing
             await this.cancelProcessing();
         }
     }
@@ -146,7 +139,6 @@ export class VoiceModule {
     }
 
     private async startRecording(isRetry: boolean = false): Promise<void> {
-        // Prevent concurrent recording starts
         if (this.isStartingRecording) {
             Logger.warn("[VoiceModule] Recording start already in progress, skipping");
             return;
@@ -158,7 +150,7 @@ export class VoiceModule {
             this.storeManager.setRecordingState(true);
             await this.showRecordingPopup();
 
-            this.currentSession = await backendAudio.startBackendRecording({
+            this.currentSession = await G.rustProxy.startAudioRecording({
                 echo_cancellation: true,
                 noise_suppression: true,
                 auto_gain_control: true,
@@ -173,7 +165,6 @@ export class VoiceModule {
 
             await this.registerEscapeShortcut();
 
-            // Recording started successfully
             this.isStartingRecording = false;
         } catch (error) {
             this.isStartingRecording = false;
@@ -217,7 +208,7 @@ export class VoiceModule {
 
     public async forceReset(): Promise<boolean> {
         try {
-            const wasReset = await resetBackendRecording();
+            const wasReset = await G.rustProxy.resetAudioRecording();
             this.currentSession = null;
             this.isStartingRecording = false;
             this.abortRequested = false;
@@ -292,14 +283,12 @@ export class VoiceModule {
             const {primaryMonitor, currentMonitor} = await import("@tauri-apps/api/window");
             let monitor = null;
 
-            // Try to get the monitor where user is currently focused
             try {
                 monitor = await currentMonitor();
             } catch (error) {
                 // Fallback to primary monitor
             }
 
-            // Fallback to primary monitor
             if (!monitor) {
                 try {
                     monitor = await primaryMonitor();
@@ -308,7 +297,6 @@ export class VoiceModule {
                 }
             }
 
-            // Compact single-line design
             const width = 280;
             const height = 48;
             const screenWidth = monitor?.size?.width || 1920;
@@ -316,12 +304,10 @@ export class VoiceModule {
             const monitorX = monitor?.position?.x || 0;
             const monitorY = monitor?.position?.y || 0;
 
-            // Bottom-center position (very bottom of MONITOR, not window)
             const offsetY = 12;
             const x = monitorX + (screenWidth - width) / 2;
             const y = monitorY + screenHeight - height - offsetY;
 
-            // Emit diagnostic info to main window
             await emitTo("main", "popup-diagnostic", {
                 action: "creating",
                 position: {x, y},
@@ -436,8 +422,8 @@ export class VoiceModule {
                 throw new Error("No active recording");
             }
 
-            const result = await backendAudio.stopBackendRecording(this.currentSession.session_id);
-            const audioBlob = backendAudio.audioResultToBlob(result);
+            const result = await G.rustProxy.stopAudioRecording(this.currentSession.session_id);
+            const audioBlob = this.audioResultToBlob(result);
 
             this.currentSession = null;
             this.storeManager.transitionRecordingToTranscribing();
@@ -514,7 +500,6 @@ export class VoiceModule {
         } catch (error) {
             this.currentOperationId = null;
 
-            // If abort was requested, this error is expected — just clean up silently
             if (this.abortRequested) {
                 this.abortRequested = false;
                 return;
@@ -560,7 +545,9 @@ export class VoiceModule {
 
     private async simulatePaste(): Promise<void> {
         try {
-            await invoke("simulate_paste");
+            // Wait for clipboard to be ready before pasting
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            await G.rustProxy.simulatePaste();
         } catch (error) {
             Logger.error("[VoiceModule] Failed to simulate paste:", {error});
 
@@ -586,6 +573,11 @@ export class VoiceModule {
                 Logger.warn("[VoiceModule] Auto-paste failed (permissions likely not granted yet)");
             }
         }
+    }
+
+    private audioResultToBlob(result: AudioRecordingResult): Blob {
+        const uint8Array = new Uint8Array(result.audio_data);
+        return new Blob([uint8Array], {type: "audio/wav"});
     }
 
     private isEnhancementProviderValid(): boolean {

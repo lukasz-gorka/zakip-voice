@@ -1,5 +1,5 @@
-import {IGlobalState} from "./global/interfaces/IGlobalState.ts";
 import {store} from "./index.ts";
+import {IGlobalState} from "./interfaces/IGlobalState.ts";
 
 export abstract class StoreManager<K extends keyof IGlobalState> {
     protected readonly storeKey: K;

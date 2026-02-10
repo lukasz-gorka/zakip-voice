@@ -1,5 +1,5 @@
 import {store} from "../appInitializer/store";
-import {IGlobalState} from "../appInitializer/store/global/interfaces/IGlobalState.ts";
+import {IGlobalState} from "../appInitializer/store/interfaces/IGlobalState.ts";
 
 export function useGlobalState<K extends keyof IGlobalState>(
     key: K,

@@ -1,4 +1,4 @@
-import {isMacOS} from "../appEnvironment/appEnvironment.ts";
+import {isMacOS} from "./appEnvironment.ts";
 
 export const MODIFIER_KEYS = ["Alt", "Shift", "Super", "CmdOrCtrl", "Control"];
 

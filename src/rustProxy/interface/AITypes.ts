@@ -1,8 +1,3 @@
-/**
- * TypeScript types for AI operations through Rust backend
- * These mirror the Rust types defined in src-tauri/src/ai/types.rs
- */
-
 export interface ChatCompletionRequest {
     model: string;
     messages: any[];

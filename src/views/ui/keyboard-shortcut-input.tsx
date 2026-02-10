@@ -1,7 +1,7 @@
 import {AlertTriangle, Check, Command, Pencil, X} from "lucide-react";
 import {MouseEvent, useCallback, useEffect, useRef, useState} from "react";
-import {isMacOS} from "../../appEnvironment/appEnvironment.ts";
 import {G} from "../../appInitializer/module/G.ts";
+import {isMacOS} from "../../utils/appEnvironment.ts";
 import {formatKeyForDisplay, formatKeysForValue, MODIFIER_KEYS, parseKeystroke} from "../../utils/keystroke";
 import {Button} from "./button.tsx";
 import {Kbd} from "./kbd.tsx";

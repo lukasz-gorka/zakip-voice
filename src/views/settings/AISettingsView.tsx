@@ -46,12 +46,10 @@ export function AISettingsView() {
 
     return (
         <div className="flex flex-col gap-4">
-            {/* Provider list */}
             {providers.map((p) => (
                 <ProviderCard key={p.uuid} provider={p} update={updateProvider} remove={removeProvider} />
             ))}
 
-            {/* Add provider */}
             {!isAdding ? (
                 <Button variant="outline" className="w-full gap-2 h-12" onClick={() => setIsAdding(true)}>
                     <Plus className="w-4 h-4" />

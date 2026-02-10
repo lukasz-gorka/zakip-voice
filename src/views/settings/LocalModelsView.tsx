@@ -1,9 +1,8 @@
-import {invoke} from "@tauri-apps/api/core";
-import {listen} from "@tauri-apps/api/event";
 import {Download, HardDrive, Loader2, Trash2} from "lucide-react";
 import {useCallback, useEffect, useState} from "react";
+import {G} from "../../appInitializer/module/G.ts";
 import {Logger} from "../../logger/Logger.ts";
-import type {LocalModelStatus} from "../../rustProxy/types/LocalModelTypes.ts";
+import type {LocalModelStatus} from "../../rustProxy/interface/LocalModelTypes.ts";
 import {Badge} from "../ui/badge.tsx";
 import {Button} from "../ui/button.tsx";
 import {Card} from "../ui/card.tsx";
@@ -18,7 +17,7 @@ export function LocalModelsView() {
 
     const fetchModels = useCallback(async () => {
         try {
-            const result = await invoke<LocalModelStatus[]>("local_models_list");
+            const result = await G.rustProxy.localModelsList();
             setModels(result);
         } catch (error) {
             Logger.error("[LocalModelsView] Failed to fetch models", {error});
@@ -34,17 +33,14 @@ export function LocalModelsView() {
     const downloadModel = async (modelId: string) => {
         setDownloadingModels((prev) => ({...prev, [modelId]: 0}));
 
-        const unlisten = await listen<number>(`local-model-download-progress-${modelId}`, (event) => {
-            setDownloadingModels((prev) => ({...prev, [modelId]: event.payload}));
-        });
-
         try {
-            await invoke("local_model_download", {modelId});
+            await G.rustProxy.localModelDownload(modelId, (progress) => {
+                setDownloadingModels((prev) => ({...prev, [modelId]: progress}));
+            });
             await fetchModels();
         } catch (error) {
             Logger.error("[LocalModelsView] Failed to download model", {error});
         } finally {
-            unlisten();
             setDownloadingModels((prev) => {
                 const next = {...prev};
                 delete next[modelId];
@@ -57,7 +53,7 @@ export function LocalModelsView() {
         setDeletingModels((prev) => new Set(prev).add(modelId));
 
         try {
-            await invoke("local_model_delete", {modelId});
+            await G.rustProxy.localModelDelete(modelId);
             await fetchModels();
         } catch (error) {
             Logger.error("[LocalModelsView] Failed to delete model", {error});

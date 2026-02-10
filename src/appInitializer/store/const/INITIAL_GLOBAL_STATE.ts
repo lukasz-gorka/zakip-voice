@@ -1,5 +1,5 @@
-import {DEFAULT_AUTO_UPDATE_STATE} from "../../../../autoUpdate/interfaces/IAutoUpdateState.ts";
-import {DEFAULT_VOICE_SETTINGS} from "../../../../voice/interfaces/IVoiceSettings.ts";
+import {DEFAULT_AUTO_UPDATE_STATE} from "../../../autoUpdate/interfaces/IAutoUpdateState.ts";
+import {DEFAULT_VOICE_SETTINGS} from "../../../voice/interfaces/IVoiceSettings.ts";
 import {IGlobalState} from "../interfaces/IGlobalState.ts";
 
 export const INITIAL_GLOBAL_STATE: IGlobalState = {

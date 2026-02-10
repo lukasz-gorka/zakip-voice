@@ -1,8 +1,8 @@
 export type AIModel = string;
 
-export const MODEL_PROVIDER_SEPARATOR = "::";
+const MODEL_PROVIDER_SEPARATOR = "::";
 
-export interface ParsedModelId {
+interface ParsedModelId {
     providerId: string;
     modelId: string;
 }

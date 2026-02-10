@@ -82,17 +82,12 @@ function RecordingPopup() {
     const config = STATE_CONFIG[state];
     const isProcessing = state === "transcribing" || state === "enhancing";
 
-    // Audio threshold for showing animation (lower for better sensitivity)
     const AUDIO_THRESHOLD = 0.005;
     const isSpeaking = audioLevel > AUDIO_THRESHOLD;
+    const boostedLevel = Math.pow(audioLevel, 0.6);
 
-    // Boost quiet sounds using power function (makes quiet sounds more visible)
-    const boostedLevel = Math.pow(audioLevel, 0.6); // 0.6 power = stronger boost for low values
-
-    // Static bars when silent
     const bars = Array.from({length: 16}, (_, i) => ({
         id: i,
-        // When speaking: boosted audio level (max 15px), when silent: static small bars (2px)
         height: isSpeaking ? Math.max(3, Math.min(boostedLevel * 200, 15)) + Math.random() * 1.5 : 2,
     }));
 
