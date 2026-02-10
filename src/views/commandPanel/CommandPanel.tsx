@@ -1,12 +1,11 @@
 import {useCallback, useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
-import {useNavigation} from "../../navigation/useNavigation.ts";
+import {BASE_NAVIGATION} from "../../navigation/const/BASE_NAVIGATION.ts";
 import {CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList} from "../ui/command.tsx";
 
 export function CommandPanel() {
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
-    const navigation = useNavigation();
 
     useEffect(() => {
         function onKeyDown(e: KeyboardEvent) {
@@ -34,7 +33,7 @@ export function CommandPanel() {
             <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
                 <CommandGroup heading="Navigation">
-                    {navigation.map((item) => {
+                    {BASE_NAVIGATION.map((item) => {
                         const Icon = item.icon;
                         return (
                             <CommandItem key={item.path} onSelect={() => handleSelect(item.path)}>

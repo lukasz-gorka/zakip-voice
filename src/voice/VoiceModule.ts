@@ -111,6 +111,11 @@ export class VoiceModule {
     }
 
     private async registerEscapeShortcut(): Promise<void> {
+        const settings = this.state();
+        if (!settings.speechToText.enableEscapeShortcut) {
+            return;
+        }
+
         try {
             const alreadyRegistered = await isRegistered("Escape");
             if (alreadyRegistered) {

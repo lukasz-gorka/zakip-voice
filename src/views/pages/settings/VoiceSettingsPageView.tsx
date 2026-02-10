@@ -151,6 +151,12 @@ export function VoiceSettingsPageView() {
                     onValueChange={(checked) => updateSpeechToText({playSoundNotification: checked})}
                     disabled={!hasSttModels}
                 />
+                <FormSwitchUI
+                    value={speechToText.enableEscapeShortcut}
+                    label="Enable Escape to Cancel"
+                    description="Press Escape during recording to cancel the transcription process"
+                    onValueChange={(checked) => updateSpeechToText({enableEscapeShortcut: checked})}
+                />
 
                 <Separator />
 

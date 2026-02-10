@@ -1,8 +1,8 @@
 import {ArrowUpCircle} from "lucide-react";
 import {NavLink, useLocation, useNavigate} from "react-router-dom";
 import {store} from "../../appInitializer/store";
+import {BASE_NAVIGATION} from "../../navigation/const/BASE_NAVIGATION.ts";
 import {ROUTE_PATH} from "../../navigation/const/ROUTE_PATH.ts";
-import {useNavigation} from "../../navigation/useNavigation.ts";
 import {
     Sidebar,
     SidebarContent,
@@ -19,7 +19,6 @@ import {
 export function AppSidebar() {
     const location = useLocation();
     const navigate = useNavigate();
-    const navigation = useNavigation();
     const updateAvailable = store((s) => s.autoUpdate.updateAvailable);
     const updateVersion = store((s) => s.autoUpdate.updateInfo?.version);
 
@@ -32,7 +31,7 @@ export function AppSidebar() {
                 <SidebarGroup className="px-4 py-3">
                     <SidebarGroupContent>
                         <SidebarMenu className="gap-2">
-                            {navigation.map((item) => {
+                            {BASE_NAVIGATION.map((item) => {
                                 const Icon = item.icon;
                                 const isActive = item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path);
 

@@ -15,6 +15,7 @@ export interface SpeechToTextSettings {
     copyToClipboard: boolean;
     autoPasteAfterTranscription: boolean;
     playSoundNotification: boolean;
+    enableEscapeShortcut: boolean;
 }
 
 export interface TranscriptionHistoryItem {
@@ -54,6 +55,7 @@ export const DEFAULT_VOICE_SETTINGS: IVoiceSettings = {
         copyToClipboard: true,
         autoPasteAfterTranscription: false,
         playSoundNotification: true,
+        enableEscapeShortcut: true,
     },
     transcriptionHistory: [],
     isRecording: false,
