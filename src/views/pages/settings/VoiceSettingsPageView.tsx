@@ -1,4 +1,5 @@
-import {AlertTriangle, AudioLines, Keyboard, RotateCcw, Settings} from "lucide-react";
+import {invoke} from "@tauri-apps/api/core";
+import {AlertTriangle, AudioLines, ExternalLink, Keyboard, RotateCcw, Settings} from "lucide-react";
 import {useCallback, useEffect, useState} from "react";
 import {NavLink, useNavigate} from "react-router-dom";
 import {G} from "../../../appInitializer/module/G.ts";
@@ -8,6 +9,7 @@ import {getAIModelsWithProvider, getProvidersWithTag} from "../../../integration
 import {AIModelTag} from "../../../integrations/ai/interface/AIModelConfig.ts";
 import {ROUTE_PATH} from "../../../navigation/const/ROUTE_PATH.ts";
 import type {LocalModelStatus} from "../../../rustProxy/interface/LocalModelTypes.ts";
+import {isMacOS} from "../../../utils/appEnvironment.ts";
 import {formatKeyForDisplay, parseKeystroke} from "../../../utils/keystroke.ts";
 import {SpeechToTextSettings} from "../../../voice/interfaces/IVoiceSettings.ts";
 import {FormSelectUI} from "../../form/FormSelectUI.tsx";
@@ -144,6 +146,16 @@ export function VoiceSettingsPageView() {
                     onValueChange={(checked) => updateSpeechToText({autoPasteAfterTranscription: checked})}
                     disabled={!speechToText.copyToClipboard}
                 />
+                {speechToText.autoPasteAfterTranscription && isMacOS() && (
+                    <button
+                        type="button"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors -mt-2 ml-1"
+                        onClick={() => invoke("open_accessibility_settings")}
+                    >
+                        <ExternalLink className="w-3 h-3" />
+                        Open Accessibility Settings (required for auto-paste)
+                    </button>
+                )}
                 <FormSwitchUI
                     value={speechToText.playSoundNotification}
                     label="Play Sound Notifications"

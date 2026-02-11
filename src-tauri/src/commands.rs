@@ -438,6 +438,59 @@ pub async fn reset_audio_recording(
 }
 
 // ============================================================================
+// System Settings Commands
+// ============================================================================
+
+#[tauri::command]
+pub async fn open_accessibility_settings() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility")
+            .spawn()
+            .map_err(|e| format!("Failed to open settings: {}", e))?;
+    }
+    Ok(())
+}
+
+// ============================================================================
+// Notification Sound Commands
+// ============================================================================
+
+#[tauri::command]
+pub async fn play_notification_sound(
+    #[allow(non_snake_case)]
+    soundType: String,
+) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        play_sound_platform(&soundType)
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))?
+}
+
+#[cfg(target_os = "macos")]
+fn play_sound_platform(sound_type: &str) -> Result<(), String> {
+    let sound_name = match sound_type {
+        "start" => "Tink",
+        "stop" => "Pop",
+        "copy" => "Morse",
+        _ => "Tink",
+    };
+    std::process::Command::new("afplay")
+        .arg(format!("/System/Library/Sounds/{}.aiff", sound_name))
+        .spawn()
+        .map_err(|e| format!("Failed to play sound: {}", e))?;
+    Ok(())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn play_sound_platform(sound_type: &str) -> Result<(), String> {
+    eprintln!("[Sound] Notification sounds not implemented for this platform (type: {})", sound_type);
+    Ok(())
+}
+
+// ============================================================================
 // Local Model Commands
 // ============================================================================
 

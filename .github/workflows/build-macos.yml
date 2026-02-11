@@ -127,7 +127,7 @@ jobs:
             if [ -n "$TARGZ" ]; then
               echo "Rebuilding .app.tar.gz with signed app..."
               APP_NAME=$(basename "$APP_BUNDLE")
-              tar -czf "$TARGZ" -C "$(dirname "$APP_BUNDLE")" "$APP_NAME"
+              COPYFILE_DISABLE=1 tar -czf "$TARGZ" -C "$(dirname "$APP_BUNDLE")" "$APP_NAME"
               echo "Rebuilt: $TARGZ"
               # Remove old signature (will be re-signed below)
               rm -f "${TARGZ}.sig"

@@ -202,6 +202,18 @@ if [ "$SKIP_BUILD" = false ]; then
       hdiutil create -volname "zakip-voice" -srcfolder "$APP_BUNDLE" -ov -format UDZO "$OLD_DMG"
       echo -e "${GREEN}✅ DMG rebuilt with signed app${NC}"
     fi
+
+    # ALWAYS rebuild .app.tar.gz with signed app and without macOS metadata
+    echo -e "${BLUE}📦 Rebuilding .app.tar.gz with signed app (no metadata)...${NC}"
+    APP_DIR=$(dirname "$APP_BUNDLE")
+    APP_NAME=$(basename "$APP_BUNDLE")
+    OLD_TARGZ=$(find "$APP_DIR" -name "*.app.tar.gz" -not -name "*.sig" 2>/dev/null | head -n 1)
+    if [ -n "$OLD_TARGZ" ]; then
+      rm -f "$OLD_TARGZ" "${OLD_TARGZ}.sig"
+    fi
+    UPDATER_FILE="${APP_DIR}/${APP_NAME}.tar.gz"
+    (cd "$APP_DIR" && COPYFILE_DISABLE=1 tar -czf "${APP_NAME}.tar.gz" "$APP_NAME")
+    echo -e "${GREEN}✅ .app.tar.gz rebuilt with signed app (no metadata)${NC}"
   fi
 
   # Find the built files
@@ -223,18 +235,19 @@ if [ "$SKIP_BUILD" = false ]; then
 
   if [ -n "$UPDATER_FILE" ] && [ -f "$UPDATER_FILE" ]; then
     echo -e "  ${BLUE}Updater bundle:${NC} $UPDATER_FILE"
+
+    # Sign the archive if not already signed
     if [ -f "$UPDATER_SIG_FILE" ] && [ -s "$UPDATER_SIG_FILE" ]; then
       echo -e "  ${BLUE}Updater signature:${NC} $UPDATER_SIG_FILE"
       echo -e "  ${GREEN}✅ Auto-update files ready!${NC}"
     else
-      echo -e "  ${YELLOW}⚠️  No signature file found or empty - will sign manually...${NC}"
+      echo -e "  ${YELLOW}⚠️  No signature file found or empty - signing now...${NC}"
       if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
         echo -e "  ${BLUE}Signing with TAURI_SIGNING_PRIVATE_KEY...${NC}"
-        # Use -k flag with key content (same as GitHub Actions)
         if pnpm tauri signer sign -k "$TAURI_SIGNING_PRIVATE_KEY" -p "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" "$UPDATER_FILE"; then
           UPDATER_SIG_FILE="${UPDATER_FILE}.sig"
           if [ -f "$UPDATER_SIG_FILE" ] && [ -s "$UPDATER_SIG_FILE" ]; then
-            echo -e "  ${GREEN}✅ Signed manually!${NC}"
+            echo -e "  ${GREEN}✅ Signed successfully!${NC}"
           else
             echo -e "  ${RED}❌ Signing command succeeded but .sig file is missing or empty!${NC}"
           fi
@@ -246,14 +259,14 @@ if [ "$SKIP_BUILD" = false ]; then
       fi
     fi
   else
-    # Create .app.tar.gz manually from .app bundle
+    # Fallback: Create .app.tar.gz manually if somehow missing
     APP_BUNDLE=$(find src-tauri/target/aarch64-apple-darwin/release/bundle/macos -name "*.app" -type d 2>/dev/null | head -n 1)
     if [ -n "$APP_BUNDLE" ] && [ -d "$APP_BUNDLE" ]; then
-      echo -e "  ${YELLOW}⚠️  No .app.tar.gz found - creating manually...${NC}"
+      echo -e "  ${YELLOW}⚠️  No .app.tar.gz found (fallback) - creating manually...${NC}"
       APP_DIR=$(dirname "$APP_BUNDLE")
       APP_NAME=$(basename "$APP_BUNDLE")
       UPDATER_FILE="${APP_DIR}/${APP_NAME}.tar.gz"
-      (cd "$APP_DIR" && tar -czf "${APP_NAME}.tar.gz" "$APP_NAME")
+      (cd "$APP_DIR" && COPYFILE_DISABLE=1 tar -czf "${APP_NAME}.tar.gz" "$APP_NAME")
       echo -e "  ${BLUE}Created:${NC} $UPDATER_FILE"
 
       # Sign the created archive
@@ -262,7 +275,7 @@ if [ "$SKIP_BUILD" = false ]; then
         if pnpm tauri signer sign -k "$TAURI_SIGNING_PRIVATE_KEY" -p "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" "$UPDATER_FILE"; then
           UPDATER_SIG_FILE="${UPDATER_FILE}.sig"
           if [ -f "$UPDATER_SIG_FILE" ] && [ -s "$UPDATER_SIG_FILE" ]; then
-            echo -e "  ${GREEN}✅ Created and signed .app.tar.gz!${NC}"
+            echo -e "  ${GREEN}✅ Created and signed!${NC}"
           else
             echo -e "  ${RED}❌ Signing command succeeded but .sig file is missing or empty!${NC}"
           fi

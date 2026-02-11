@@ -160,6 +160,14 @@ export class RustProxy {
             return {};
         }
     }
+    public async playNotificationSound(soundType: "start" | "stop" | "copy"): Promise<void> {
+        try {
+            await invoke("play_notification_sound", {soundType});
+        } catch (error) {
+            Logger.error("[RustProxy] playNotificationSound failed", {error});
+        }
+    }
+
     public async simulatePaste(): Promise<void> {
         try {
             await invoke("simulate_paste");

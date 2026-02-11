@@ -7,7 +7,6 @@ import {AIService} from "../integrations/ai/AIService.ts";
 import {Logger} from "../logger/Logger.ts";
 import {ChatCompletionRequest, ProviderCredentials} from "../rustProxy/interface/AITypes.ts";
 import type {AudioRecordingResult, AudioRecordingSession} from "../rustProxy/interface/AudioTypes.ts";
-import {playCopySound, playStartSound, playStopSound} from "../utils/audioNotifications.ts";
 import {copyToClipboard} from "../utils/clipboard.ts";
 import {toast} from "../views/ui/use-toast.ts";
 import {RECORDING_POPUP_LABEL} from "./const/RECORDING_POPUP_LABEL.ts";
@@ -165,7 +164,7 @@ export class VoiceModule {
 
             const settings = this.state();
             if (settings.speechToText.playSoundNotification) {
-                playStartSound();
+                G.rustProxy.playNotificationSound("start");
             }
 
             await this.registerEscapeShortcut();
@@ -438,7 +437,7 @@ export class VoiceModule {
             const settings = this.state();
 
             if (settings.speechToText.playSoundNotification) {
-                playStopSound();
+                G.rustProxy.playNotificationSound("stop");
             }
 
             const transcribeOperationId = `transcribe-${Date.now()}`;
@@ -536,7 +535,7 @@ export class VoiceModule {
             const settings = this.state();
 
             if (settings.speechToText.playSoundNotification) {
-                playCopySound();
+                G.rustProxy.playNotificationSound("copy");
             }
 
             // Auto-paste if enabled

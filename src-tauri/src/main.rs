@@ -75,6 +75,11 @@ async fn main() {
             commands::cancel_audio_recording,
             commands::reset_audio_recording,
             // Local model commands
+            // System settings
+            commands::open_accessibility_settings,
+            // Notification sound
+            commands::play_notification_sound,
+            // Local model commands
             commands::local_models_list,
             commands::local_model_download,
             commands::local_model_delete,
